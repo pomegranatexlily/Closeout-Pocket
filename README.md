@@ -6,7 +6,7 @@ The prototype lets an operator record a customer's job, structured service addre
 
 **Live Pages URL once Pages is enabled:** https://pomegranatexlily.github.io/Closeout-Pocket/
 
-**To enable:** Repository → Settings → Pages → Build and deployment → **Deploy from a branch**, select **main** and **/(root)** → Save. If the supplied GitHub Actions deployment successfully enables Pages first, this manual step won't be necessary.
+**To enable:** Repository → Settings → Pages → Build and deployment → Source: **GitHub Actions**. The existing `.github/workflows/deploy-pages.yml` workflow publishes the root app on pushes to `main`. If Pages has not been enabled yet, this is a one-time repository setting. Check the Actions tab for the latest deployment run.
 
 ## Files
 - `index.html` — standalone web app, including photo attachment and report-generation functionality
