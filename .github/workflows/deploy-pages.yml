@@ -1,7 +1,6 @@
-name: Publish Packet Lily to GitHub Pages
+# Branch-based GitHub Pages publishing is automatic; keep this as a manual fallback only.
+name: Manual Packet Lily Pages Publish
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
