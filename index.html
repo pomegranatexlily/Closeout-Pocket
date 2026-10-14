@@ -72,6 +72,9 @@
 .r-payment-link a{display:block;max-width:360px;text-align:center;text-decoration:none;background:#0b744a;color:#fff;border-radius:10px;font-size:14px;font-weight:800;padding:14px 16px;overflow-wrap:anywhere}
 .r-payment-link .pay-explain{font-size:10px;margin:9px 0 0;color:#4b665e;line-height:1.5}
 @media print{.r-payment-link a{background:#0b744a!important;color:white!important}}
+.confirm-request{display:flex;align-items:flex-start;gap:9px;font-weight:650;font-size:12px;line-height:1.45;cursor:pointer;margin-top:6px;color:#24463d}
+.confirm-request input{flex:none;width:19px!important;height:19px!important;min-height:0!important;margin:0;accent-color:#137266}
+#paymentLinkStatus{font-size:11px;font-weight:650;display:block;margin-top:5px}
 </style>
 </head>
 <body>
@@ -104,7 +107,7 @@
 <section class="card"><div class="card-head"><span class="card-num">03</span><div><h3>Photo evidence</h3><p>Document the result in pictures</p></div></div><div class="photo-grid"><div><label for="beforeFiles" class="upload-area"><span class="upload-icon">＋</span><strong>Add before photos</strong><span>Choose up to 4 photos</span></label><input id="beforeFiles" type="file" accept="image/*" multiple hidden><div class="thumbs" id="beforeThumbs"></div></div><div><label for="afterFiles" class="upload-area"><span class="upload-icon">＋</span><strong>Add after photos</strong><span>Choose up to 4 photos</span></label><input id="afterFiles" type="file" accept="image/*" multiple hidden><div class="thumbs" id="afterThumbs"></div></div></div><p class="help">Photos are resized to keep packets lightweight. This demo stores images only in the current browser; it does not upload them.</p></section>
 <section class="card payment-card"><div class="card-head"><span class="card-num">04</span><div><h3>Payment details</h3><p>Make the balance unmistakable</p></div></div><div class="field-grid payment-fields"><div class="field"><label for="total">Job total ($)</label><input id="total" data-field="total" type="text" inputmode="decimal" autocomplete="off" placeholder="$250.00" aria-describedby="moneyHelp"></div>
 <div class="field"><label for="paid">Amount paid ($)</label><input id="paid" data-field="paid" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div><div class="field span"><label for="due">Payment due date (optional)</label><input id="due" type="date" data-field="due"></div>
-<div class="field span"><label for="paymentLink">Cash App payment-request link (optional)</label><input id="paymentLink" data-field="paymentLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://cash.app/…"><small>Request this invoice's amount inside Cash App, choose its shareable payment link, and paste it here. Check the amount and recipient before sharing.</small></div><div class="field span"><label for="notes">Final notes (optional)</label><textarea id="notes" rows="3" data-field="notes" placeholder="Warranty, instructions, next steps, or thank-you note"></textarea></div></div><p class="help" id="moneyHelp">Amounts format automatically in USD: $10,000.00. Enter dollars and cents without typing the $ or commas.</p>
+<div class="field span"><label for="paymentLink">Cash App payment link</label><input id="paymentLink" data-field="paymentLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://cash.app/…"><small>For the exact amount: Cash App → Request → enter balance due → add invoice reference → Share link → paste here. A $cashtag link does not prefill the amount.</small><label class="confirm-request" for="confirmPaymentAmount"><input type="checkbox" id="confirmPaymentAmount"> I created this Cash App request for the exact amount due</label><small id="paymentLinkStatus" role="status" aria-live="polite"></small></div><div class="field span"><label for="notes">Final notes (optional)</label><textarea id="notes" rows="3" data-field="notes" placeholder="Warranty, instructions, next steps, or thank-you note"></textarea></div></div><p class="help" id="moneyHelp">Amounts format automatically in USD: $10,000.00. Enter dollars and cents without typing the $ or commas.</p>
 <div class="summary-strip"><div class="sum-row"><span>Job total</span><strong id="liveTotal">$0.00</strong></div><div class="sum-row"><span>Payments received</span><strong id="livePaid">$0.00</strong></div><div class="sum-row total"><span id="balanceLabel">Balance due</span><strong id="liveBalance">$0.00</strong></div></div></section>
 <section class="card"><h3>Ready to close it out?</h3><p class="help">Start with the example, or enter an actual job. Preview before you print or share.</p><div class="action-bar"><button class="btn primary" id="previewBtn">Generate &amp; view packet →</button><button class="btn" id="saveBtn">Save to archive</button><button class="btn" id="blankBtn">New blank</button><button class="btn small" id="demoBtn">Load example</button></div></section>
 </div></div></div>
@@ -122,7 +125,7 @@
 </div>
 <div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn small" id="downloadBtn">Save report file</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Generated packets are saved to your device archive when storage is available. “Share payment request” opens your device's share menu with the invoice details and a Cash App payment link—no attachment. You must choose a contact and tap Send. “Email invoice” opens an addressed email draft with invoice details and your Cash App link when provided. You must review and tap Send in your email app; it does not attach a file. For a photo report attachment, use “Share report file” and choose Mail. “Save report file” downloads a self-contained HTML report. Email is never sent automatically.</p></section>
 <section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-switch="build">+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Closeout Pocket · Pomegranate × Lily · Prototype v1.4 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<p class="copyright">Closeout Pocket · Pomegranate × Lily · Prototype v1.5 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -131,7 +134,7 @@
 const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1';
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const demo=()=>({company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
-const blank=()=>({company:'',phone:'',companyEmail:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',notes:'',photos:{before:[],after:[]}});
+const blank=()=>({company:'',phone:'',companyEmail:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
 const fields=['company','phone','companyEmail','customer','customerEmail','job','address','city','stateCode','zip','date','ref','summary','work','total','paid','due','paymentLink','notes'];
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
 const safe=val=>String(val??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -181,7 +184,7 @@ function normalize(v){
    if(parts){o.address=parts[1];o.city=parts[2];o.stateCode=parts[3].toUpperCase();o.zip=parts[4]||''}
  }
  o.photos={before:Array.isArray(v?.photos?.before)?v.photos.before:[],after:Array.isArray(v?.photos?.after)?v.photos.after:[]};
- o.total=cleanMoney(o.total);o.paid=cleanMoney(o.paid);
+ o.total=cleanMoney(o.total);o.paid=cleanMoney(o.paid);o.paymentRequestAmount=cleanMoney(o.paymentRequestAmount);
  return o;
 }
 function fullAddress(){const location=[state.city,state.stateCode].filter(Boolean).join(state.city&&state.stateCode?', ':' ');return [state.address,[location,state.zip].filter(Boolean).join(' ')].filter(Boolean).join('\n')}
@@ -197,34 +200,64 @@ function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=t
 function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs').innerHTML=state.photos[kind].map((item,i)=>`<div class="thumb"><img src="${safe(item.data)}" alt="${kind} photo ${i+1}"><button type="button" data-remove-photo="${kind}:${i}" aria-label="Remove ${kind} photo ${i+1}">×</button></div>`).join('')}}
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
 function cashAppUrl(){
- const raw=String(state.paymentLink||'').trim();
- if(!raw)return '';
+ const raw=String(state.paymentLink||'').trim();if(!raw)return '';
  try{
   const url=new URL(raw);
   if(url.protocol!=='https:'||!['cash.app','www.cash.app'].includes(url.hostname.toLowerCase())||url.username||url.password||url.pathname==='/')return '';
   return url.href;
  }catch(e){return ''}
 }
+function isCashtagProfile(){
+ try{return /^\/\$[a-z0-9_]{1,30}\/?$/i.test(new URL(cashAppUrl()).pathname)}catch(e){return false}
+}
+function paymentRequestState(){
+ const url=cashAppUrl(),due=Math.max(0,num(state.total)-num(state.paid));
+ if(due<=0.005)return 'paid';
+ if(!url)return 'missing';
+ if(isCashtagProfile())return 'manual';
+ if(state.paymentLinkNeedsRefresh)return 'stale';
+ if(state.paymentRequestConfirmed&&state.paymentRequestConfirmedLink===url&&Math.round(num(state.paymentRequestAmount)*100)===Math.round(due*100))return 'exact';
+ if(state.paymentRequestConfirmed)return 'stale';
+ return 'unconfirmed';
+}
+function payableLink(){
+ const status=paymentRequestState();
+ return status==='exact'||status==='manual'?cashAppUrl():'';
+}
+function renderPaymentStatus(){
+ const status=paymentRequestState(),due=fmt(Math.max(0,num(state.total)-num(state.paid)));
+ const el=$('#paymentLinkStatus'),check=$('#confirmPaymentAmount');
+ check.checked=status==='exact';
+ check.disabled=['manual','missing','paid','stale'].includes(status);
+ const msg={
+  paid:'Paid in full. No payment request needed.',
+  missing:'Paste a Cash App request link to enable payments.',
+  manual:'This is a $cashtag profile link. The customer must enter '+due+' manually.',
+  unconfirmed:'Confirm you requested exactly '+due+' inside Cash App.',
+  stale:'Invoice balance changed or link mismatch. Create a new Cash App request for '+due+'.',
+  exact:'Amount-specific request confirmed by you for '+due+'.'
+ };
+ el.textContent=msg[status];
+}
 function paymentRequestText(){
- const balance=num(state.total)-num(state.paid);
- const link=cashAppUrl();
- if(balance<=0.005)return '';
+ const balance=num(state.total)-num(state.paid),link=payableLink(),type=paymentRequestState();
+ if(balance<=0.005||!link)return '';
  return [
   (state.company||'Closeout Pocket')+' · PAYMENT REQUEST',
   'Invoice '+(state.ref||'—'),
   'For: '+(state.job||'Service'),
   'Amount due: '+fmt(balance),
   state.due?'Due: '+niceDate(state.due):'',
-  'Pay using this Cash App request link:',
+  type==='exact'?'Cash App request for this amount:':'Pay using this Cash App profile (enter '+fmt(balance)+'):',
   link,
-  'Please confirm the recipient and amount in Cash App before paying.'
+  'Verify the recipient and amount before sending.'
  ].filter(Boolean).join('\n');
 }
 async function sharePaymentRequest(){
- const balance=num(state.total)-num(state.paid),link=cashAppUrl();
+ const balance=num(state.total)-num(state.paid),link=payableLink();
  if(balance<=0.005){toast('No balance is due on this invoice.');return}
  if(!link){
-  toast('First paste a valid Cash App payment-request link.');
+  toast('Paste a valid Cash App request and confirm its amount, or use a $cashtag profile link.');
   switchTo('build');$('#paymentLink').focus();return;
  }
  if(!savePacket(true))toast('Archive unavailable; remember to export a backup.');
