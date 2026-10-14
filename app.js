@@ -139,6 +139,7 @@ function renderBusinessSettings(){
  $('#defaultCashStatus').textContent=businessProfile.paymentLink?'Saved Cash App account: '+businessProfile.paymentLink+' — profile link, amount entered by payer.':'No default Cash App account saved yet.';
 }
 function applyBusinessToInvoice(quiet=false){
+ if(state.closedAt){toast('Reopen this invoice before editing its business information.');return false}
  if(!businessProfile.company){toast('Save your business name first.');return false}
  if(!quiet&&state.archiveId&&!confirm('Change the business and payment details on this saved invoice?'))return false;
  const previousLink=state.paymentLink;
@@ -535,7 +536,7 @@ function generatePacket(){
   }
 }
 async function copySummary(){const total=num(state.total),paid=num(state.paid),balance=total-paid;const content=[`${state.company||'Service completion'} — Job Packet`,`Customer: ${state.customer||'—'}`,`Service address: ${fullAddress()||'—'}`,`Job: ${state.job||'—'}`,`Completed: ${niceDate(state.date)}`,`Work completed:\n${state.work||'—'}`,`Job total: ${fmt(total)}`,`Paid: ${fmt(paid)}`,`${balance<0?'Customer credit':'Balance due'}: ${fmt(Math.abs(balance))}`,state.notes?`Notes: ${state.notes}`:''].filter(Boolean).join('\n\n');try{await navigator.clipboard.writeText(content);toast('Summary copied to clipboard')}catch(e){const t=document.createElement('textarea');t.value=content;t.style.position='fixed';t.style.left='-9999px';document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('Summary copied to clipboard')}catch(e){toast('Copy unavailable in this browser')}t.remove()}}
-function startOver(next){state=next;$('#generationBanner').hidden=true;receiptPaymentId=(state.payments||[]).filter(p=>p.source==='owner'&&!p.voidedAt).slice(-1)[0]?.id||'';const extras=$('#invoiceExtras');if(extras)extras.open=false;loadForm();autosave();switchTo('build')}
+function startOver(next){state=normalize(next);$('#generationBanner').hidden=true;receiptPaymentId=(state.payments||[]).filter(p=>p.source==='owner'&&!p.voidedAt).slice(-1)[0]?.id||'';const extras=$('#invoiceExtras');if(extras)extras.open=false;loadForm();autosave();switchTo('build')}
 function beginNewInvoice(){if((state.customer||num(state.total)>0||state.job||state.work||state.photos.before.length||state.photos.after.length)&&!confirm('Start a new invoice? Changes that are not archived will be replaced.'))return;startOver(newInvoice())}
 function focusOptionalField(selector){const details=$('#invoiceExtras');if(details)details.open=true;const input=$(selector);if(input)input.focus();}
 function updateFieldFromInput(e){
