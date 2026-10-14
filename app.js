@@ -66,7 +66,7 @@ let state=normalize(previousDraft||newInvoice());let saved=retrieve(K_SAVED);if(
 const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
 let privacyAcknowledged=storedPreferences?.acknowledged===true||storedPreferences===null&&deviceSaving;
-let tab='home',toastTimer,receiptPaymentId='',viewMode='owner',deskSection='overview';
+let tab='home',toastTimer,receiptPaymentId='',viewMode='owner',deskSection='overview',archiveFilter='unpaid';
 function normalize(v){
  const o={...blank(),...v};
  // Older drafts stored "street, city, ST" as one line: migrate when unambiguous.
@@ -305,9 +305,11 @@ async function sharePaymentRequest(){
   toast('Unable to share here. Open Safari and try again.');
  }
 }
-function reportMarkup(audience='owner'){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0,fullPacket=Boolean(state.job||state.work||state.summary||state.photos.before.length||state.photos.after.length);const businessLocation=[state.businessCity,state.businessState].filter(Boolean).join(', '),businessAddress=[state.businessAddress,[businessLocation,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}${businessAddress?'<br>'+safe(businessAddress):''}</div></div><div style="text-align:right"><div class="r-label">${fullPacket?"Completion report":"Customer invoice"}</div><div class="r-title">${fullPacket?"Job Packet":"Invoice"}</div><div class="r-badge">${fullPacket?"✓ WORK COMPLETED":balance>0.005?"BALANCE DUE":"✓ PAID"}</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">${fullPacket?'Job details':'Invoice details'}</div><div class="r-value">${dash(state.job||"Services")}</div><div class="r-light">${fullPacket?'Completed':'Issued'}: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}${fullPacket?`<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):"See job description."}</p></section>`:""}${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${audience!=='owner'&&balance>0.005&&payableLink()?`<section class="r-payment-link"><p class="pay-label">Pay through Cash App</p>${audience==='customer-export'?'<a href="'+safe(payableLink())+'" target="_blank" rel="noopener noreferrer">'+safe(paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →')+'</a>':'<span class="pay-preview" aria-disabled="true">'+safe(paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →')+'</span>'}<p class="pay-explain">${audience==='customer-preview'?'Preview only — payment is available in the customer copy sent to their device. ':''}${paymentRequestState()==='manual'?'This is a profile link: enter the amount yourself. ':''}Payment is handled by Cash App, not Packet Lily. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
+function reportMarkup(audience='owner'){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0,fullPacket=Boolean(state.job||state.work||state.summary||state.photos.before.length||state.photos.after.length);const businessLocation=[state.businessCity,state.businessState].filter(Boolean).join(', '),businessAddress=[state.businessAddress,[businessLocation,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}${businessAddress?'<br>'+safe(businessAddress):''}</div></div><div style="text-align:right"><div class="r-label">${fullPacket?"Completion report":"Customer invoice"}</div><div class="r-title">${fullPacket?"Job Packet":"Invoice"}</div><div class="r-badge">${state.closedAt?"✓ PAID IN FULL":balance<=0.005?"PAYMENT RECORDED":"BALANCE DUE"}</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">${fullPacket?'Job details':'Invoice details'}</div><div class="r-value">${dash(state.job||"Services")}</div><div class="r-light">${fullPacket?'Completed':'Issued'}: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}${fullPacket?`<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):"See job description."}</p></section>`:""}${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${audience!=='owner'&&balance>0.005&&payableLink()?`<section class="r-payment-link"><p class="pay-label">Pay through Cash App</p>${audience==='customer-export'?'<a href="'+safe(payableLink())+'" target="_blank" rel="noopener noreferrer">'+safe(paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →')+'</a>':'<span class="pay-preview" aria-disabled="true">'+safe(paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →')+'</span>'}<p class="pay-explain">${audience==='customer-preview'?'Preview only — payment is available in the customer copy sent to their device. ':''}${paymentRequestState()==='manual'?'This is a profile link: enter the amount yourself. ':''}Payment is handled by Cash App, not Packet Lily. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
 function renderReport(){$('#report').innerHTML=reportMarkup(viewMode==='customer'?'customer-preview':'owner')}
 function renderAudienceMode(){
+ if(viewMode==='customer'&&!invoicePrepared())viewMode='owner';
+ if(deskSection==='receipts'&&!receiptsUnlocked())deskSection='overview';
  const customer=viewMode==='customer';
  const host=$('#screen-preview');
  host.classList.toggle('customer-mode',customer);
@@ -323,6 +325,7 @@ function renderAudienceMode(){
  $('#deskOverview').hidden=customer||deskSection!=='overview';
  $('#deskPayments').hidden=customer||deskSection!=='payments';
  $('#deskReceipts').hidden=customer||deskSection!=='receipts';
+ renderWorkflowGuide();
  $('#audienceExplainer').textContent=customer
   ?'Read-only preview. Customers receive an independent invoice with their own payment link.'
   :deskSection==='overview'?'Invoice status and next steps. Payment and receipt details live under their own tabs.'
@@ -330,14 +333,16 @@ function renderAudienceMode(){
   :'Generate, download, or share a customer receipt as a PDF. Internal notes stay private.';
 }
 function setDeskSection(section,scroll=false){
+ if(!invoicePrepared()){guideToDraft();return false}
  if(!['overview','payments','receipts'].includes(section))section='overview';
+ if(section==='receipts'&&!receiptsUnlocked()){toast('Receipts unlock after full payment and closeout.');return false}
  deskSection=section;viewMode='owner';
  renderAudienceMode();renderReport();
  if(scroll&&$('#'+(section==='receipts'?'deskReceipts':section==='payments'?'deskPayments':'deskOverview')).scrollIntoView)
   $('#'+(section==='receipts'?'deskReceipts':section==='payments'?'deskPayments':'deskOverview')).scrollIntoView({behavior:'smooth',block:'start'});
 }
 function setAudienceMode(mode){
- if(mode==='customer'){viewMode='customer';renderAudienceMode();renderReport()}
+ if(mode==='customer'){if(!invoicePrepared()){guideToDraft();return}viewMode='customer';renderAudienceMode();renderReport()}
  else setDeskSection('overview');
 }
 
@@ -370,12 +375,12 @@ function renderPaymentCenter(){
  log.innerHTML=!(state.payments||[]).length?
   '<p class="help">No payments recorded yet. Confirm a deposit outside Packet Lily before recording it here.</p>':
   state.payments.slice().reverse().map(p=>{
-   const invalid=Boolean(p.voidedAt),legacy=p.source==='legacy',canReceipt=!invalid&&!legacy&&p.verifiedByOwner;
+   const invalid=Boolean(p.voidedAt),legacy=p.source==='legacy',canReceipt=receiptsUnlocked()&&!invalid&&!legacy&&p.verifiedByOwner;
    const meta=[p.method,niceDate(p.date),p.reference?'Reference: '+p.reference:'',legacy?'Legacy entry · confirmation unavailable':'Recorded by business owner',p.note||'',invalid?'VOIDED · '+p.voidedAt.slice(0,10):''].filter(Boolean).map(safe).join(' · ');
    return '<div class="payment-line'+(invalid?' is-voided':'')+'"><div><span class="payment-amount">'+fmt(cents(p.amount)/100)+(invalid?' · Voided':'')+'</span><div class="payment-meta">'+meta+'</div></div><div class="payment-line-actions">'+(canReceipt?'<button type="button" class="btn small" data-view-receipt="'+safe(p.id)+'">Receipt</button>':'')+(!invalid&&!closed?'<button type="button" class="btn danger small" data-void-payment="'+safe(p.id)+'">Void entry</button>':'')+'</div></div>';
   }).join('');
  const form=$('#recordPaymentForm');
- form.hidden=closed||balance<=0||total<=0;
+ form.hidden=!invoicePrepared()||closed||balance<=0||total<=0;
  const amount=$('#payEntryAmount');
  if(!form.hidden&&!amount.value)amount.value=showMoney((balance/100).toFixed(2),true);
  if(!$('#payEntryDate').value)$('#payEntryDate').value=today();
@@ -384,9 +389,12 @@ function renderPaymentCenter(){
  const receipt=currentReceipt();
  $('#receiptPanel').hidden=!receipt;
  $('#receiptEmpty').hidden=Boolean(receipt);
+ if(!receipt)$('#receiptEmpty').textContent=receiptsUnlocked()?'Select a recorded payment under Payments to view its receipt.':'Final receipts unlock after full payment and closeout.';
+ renderWorkflowGuide();
  $('#receiptDocument').innerHTML=receipt?receiptMarkup(receipt):'';
 }
 function recordPayment(){
+ if(!invoicePrepared()){guideToDraft('Generate an invoice before recording payments.');return}
  if(state.closedAt){toast('Reopen the invoice before making payment corrections.');return}
  if(!state.company.trim()||!state.customer.trim()||cents(state.total)<=0){toast('Enter the business, customer, and invoice amount first.');return}
  if((state.payments||[]).length>=200){toast('This invoice has reached its payment record limit.');return}
@@ -409,7 +417,7 @@ function recordPayment(){
  $('#payOwnerConfirmed').checked=false;
  renderBalance();renderReport();renderPaymentStatus();renderPaymentCenter();
  const archived=savePacket(true);
- setDeskSection('receipts',true);
+ if(invoiceStage()==='ready-close')setDeskSection('overview',true);else setDeskSection('payments');
  toast('Payment '+fmt(amount/100)+' recorded by you.'+(archived?' Invoice updated.':' Not archived; enable local saving or export your records.'));
 }
 function voidPayment(id){
@@ -423,18 +431,21 @@ function voidPayment(id){
  toast(archived?'Payment entry voided and invoice updated.':'Entry voided in session; save an updated backup.');
 }
 function closeInvoice(){
+ if(!invoicePrepared()){guideToDraft();return}
  if(state.closedAt)return;
  if(cents(state.total)<=0||cents(state.paid)<cents(state.total)||!activePayments().length){toast('Record the full payment before closing the invoice.');return}
  if(!confirm('Confirm you checked the actual payments outside Packet Lily. Close this invoice as paid in full? Packet Lily does not verify deposits.'))return;
  state.closedAt=new Date().toISOString();
+ receiptPaymentId=activePayments().filter(p=>p.source==='owner'&&p.verifiedByOwner).slice(-1)[0]?.id||'';
  renderReport();renderPaymentCenter();
  const archived=savePacket(true);
- toast(archived?'Invoice closed and saved.':'Invoice closed in this session only. Enable saving or export a backup.');
+ toast(archived?'Invoice closed and saved. Final receipt unlocked.':'Invoice closed in this session; save a backup.');
+ if(receiptsUnlocked())setDeskSection('receipts',true);
 }
 function reopenInvoice(){
  if(!state.closedAt||!confirm('Reopen this completed invoice for corrections? Its closed status will be cleared.'))return;
  state.closedAt='';
- renderReport();renderPaymentCenter();
+ renderReport();renderPaymentCenter();setDeskSection('overview');
  const archived=savePacket(true);
  toast(archived?'Invoice reopened and archive updated.':'Invoice reopened in session; save a backup.');
 }
@@ -460,7 +471,7 @@ function receiptText(p){
 }
 /* A real one-page PDF receipt made locally. No HTML attachment and no remote library. */
 function makeReceiptPdf(p,record=state){
- if(!p||p.source!=='owner'||p.verifiedByOwner!==true||p.voidedAt)throw new Error('An owner-confirmed payment must be selected.');
+ if(!p||!record.closedAt||cents(record.paid)<cents(record.total)||p.source!=='owner'||p.verifiedByOwner!==true||p.voidedAt)throw new Error('Final receipts require a paid and closed invoice.');
  const canvas=document.createElement('canvas');
  canvas.width=1190;canvas.height=1684;
  const ctx=canvas.getContext('2d');
@@ -823,7 +834,8 @@ function generatePacket(){
     if(!state.company.trim()){switchTo('business');toast('Save your business details before generating an invoice.');return}
     if(!state.customer.trim()){switchTo('build');$('#customer').focus();toast('Enter the customer name.');return}
     if(num(state.total)<=0){switchTo('build');$('#total').focus();toast('Enter an invoice amount above zero.');return}
-    renderReport();
+    state.preparedAt=state.preparedAt||new Date().toISOString();state.workflowVersion=2;
+     renderReport();
     if(!$('#report .report-body'))throw new Error('Report unavailable');
     const archived=savePacket(true);
     switchTo('preview');
@@ -849,7 +861,10 @@ function updateFieldFromInput(e){
  const oldBalance=Math.round((num(state.total)-num(state.paid))*100);
  const oldLink=String(state.paymentLink||'');
  if(state.closedAt){el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??'';toast('Reopen this invoice before editing its details.');return}
+  const prior=state[field];
+  if(['company','customer','total'].includes(field)&&activePayments().length&&String(prior)!==String(field==='total'?cleanMoney(el.value):el.value)){el.value=field==='total'?showMoney(prior,true):prior;toast('Void recorded payments before changing customer, business, or total.');return}
   state[field]=(field==='total'||field==='paid')?applyMoneyTyping(el):el.value;
+  if(['company','customer','total'].includes(field)&&String(prior)!==String(state[field])&&state.preparedAt&&!activePayments().length){state.preparedAt='';$('#generationBanner').hidden=true}
  if((field==='total'||field==='paid')&&oldBalance!==Math.round((num(state.total)-num(state.paid))*100)&&state.paymentRequestConfirmed)state.paymentLinkNeedsRefresh=true;
  if(field==='paymentLink'&&oldLink!==state.paymentLink){state.paymentRequestConfirmed=false;state.paymentRequestAmount='';state.paymentRequestConfirmedLink='';state.paymentLinkNeedsRefresh=false}
  renderBalance();renderReport();renderPaymentStatus();if(tab==='preview')renderPaymentCenter();autosave();
