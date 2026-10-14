@@ -191,13 +191,19 @@
     <button type="button" class="btn" id="savePacketFileBtn">Save report file</button>
   </div>
 </div>
+<section class="workflow-guide" id="workflowGuide" aria-live="polite" aria-label="Invoice progress">
+ <div class="workflow-guide-header"><div><span class="payment-eyebrow">GUIDED WORKFLOW</span><h3 id="workflowTitle">Complete invoice details first</h3></div><span class="workflow-step" id="workflowStep">Step 1 of 4</span></div>
+ <div class="workflow-progress" aria-hidden="true"><span id="workflowProgress"></span></div>
+ <p id="workflowHint">Enter your business, customer and invoice amount to continue.</p>
+ <button type="button" class="btn primary small" id="workflowNextBtn">Continue →</button>
+</section>
 <div class="audience-switcher" aria-label="Invoice sections">
   <div class="audience-switcher-head"><strong>Invoice workspace</strong><span>PRIVATE • CONTRACTOR DEVICE</span></div>
   <nav class="audience-options desk-section-nav" aria-label="Invoice desk sections">
     <button type="button" class="audience-option active" id="ownerViewBtn" aria-pressed="true">Overview</button>
     <button type="button" class="audience-option" id="paymentsViewBtn" aria-pressed="false">Payments</button>
-    <button type="button" class="audience-option" id="receiptsViewBtn" aria-pressed="false">Receipts</button>
-    <button type="button" class="audience-option" id="customerViewBtn" aria-pressed="false">Customer copy</button>
+    <button type="button" class="audience-option" id="receiptsViewBtn" aria-pressed="false" disabled aria-disabled="true">Receipts · Locked</button>
+    <button type="button" class="audience-option" id="customerViewBtn" aria-pressed="false">Customer invoice</button>
   </nav>
   <p id="audienceExplainer">Manage the job here. Open Payments or Receipts only when needed; Customer copy is a separate read-only preview.</p>
 </div>
@@ -237,7 +243,7 @@
   </div>
   <div class="desk-pane" id="deskReceipts" hidden>
    <div class="desk-pane-heading"><span class="payment-eyebrow">CUSTOMER DOCUMENTS</span><h3>Receipts</h3><p>Select a recorded payment to open its receipt, then save it as PDF or share it.</p></div>
-   <div class="receipt-empty" id="receiptEmpty">No receipt selected yet. Open Payments and choose Receipt next to a recorded payment.</div>
+   <div class="receipt-empty" id="receiptEmpty">A final receipt becomes available after full payment is recorded and the invoice is closed.</div>
   <section id="receiptPanel" class="receipt-panel" hidden>
     <div class="receipt-toolbar"><div><span class="payment-eyebrow">CUSTOMER COPY</span><h4>Payment receipt</h4></div><div class="receipt-buttons"><button type="button" class="btn small" id="shareReceiptBtn">Share PDF</button><button type="button" class="btn primary small" id="downloadReceiptBtn">Save PDF receipt</button><button type="button" class="btn small" id="printReceiptBtn">Print PDF</button></div></div>
     <article id="receiptDocument" class="receipt-sheet" aria-label="Receipt recorded by the business owner"></article>
@@ -245,7 +251,12 @@
   </div>
 </section>
 <article class="report" id="report" aria-label="Read-only invoice review"></article><p class="help" style="max-width:830px;margin:15px auto">Contractor desk is private. A shared invoice file contains only customer-facing invoice details and a payment link when configured; it never contains your payment desk, transaction ledger, or internal notes. A Cash App link is not proof of payment.</p></section>
-<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-new-invoice>+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><section class="filing-panel" aria-labelledby="filingHeading">
+<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Separate jobs awaiting payment from fully paid and closed jobs.</p></div><button class="btn primary small" data-new-invoice>+ New invoice</button></div>
+<div class="archive-status-tabs" role="group" aria-label="Filter invoices by status">
+ <button type="button" class="archive-status-tab active" data-archive-status="unpaid" aria-pressed="true">Unpaid <span id="unpaidCount">0</span></button>
+ <button type="button" class="archive-status-tab" data-archive-status="paid" aria-pressed="false">Paid &amp; closed <span id="paidCount">0</span></button>
+ <button type="button" class="archive-status-tab" data-archive-status="all" aria-pressed="false">All <span id="allCount">0</span></button>
+</div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><section class="filing-panel" aria-labelledby="filingHeading">
  <div class="filing-heading"><div><span class="payment-eyebrow">DOCUMENT FILING</span><h3 id="filingHeading">Save organized PDF folders</h3><p>Package your invoices and recorded-payment receipts by year and month. iPhone Files can extract the ZIP into actual folders.</p></div><span class="filing-icon" aria-hidden="true">↳</span></div>
  <div class="filing-actions"><div class="field"><label for="filingMonth">Choose a month</label><select id="filingMonth" aria-describedby="filingHelp"><option value="">No invoices archived</option></select></div>
  <button type="button" class="btn primary" id="saveMonthZipBtn">Save month's folder (ZIP)</button><button type="button" class="btn" id="saveAllZipBtn">Save all months (ZIP)</button></div>
@@ -254,7 +265,7 @@
 </section>
 <div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
 <section class="privacy-notice" id="privacySettings"><h3>Privacy &amp; device storage</h3><p id="storageStateText"></p><div class="action-bar"><button type="button" class="btn small" id="toggleDeviceSaveBtn">Change saving preference</button><button type="button" class="btn danger small" id="eraseDeviceBtn">Erase all local invoices and drafts</button><a class="btn small" href="privacy.html">Privacy details</a></div><p class="help">No analytics, advertising trackers, or nonessential cookies are used. Your archive is not a secure multi-device business database.</p></section><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Packet Lily · Pomegranate × Lily · v3.7 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<p class="copyright">Packet Lily · Pomegranate × Lily · v3.8 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="filing.js" defer></script><script src="app.js" defer></script>
