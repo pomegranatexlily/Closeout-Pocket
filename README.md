@@ -1,17 +1,20 @@
-# Closeout Pocket
+# Packet Lily
 
-**A Pomegranate × Lily prototype** — a phone-first invoice and job completion packet builder for small trades and service operators.
+**A Pomegranate × Lily product (field-test version)** — a phone-first invoice and job completion packet builder for small trades and service operators.
+
+### Packet Lily design
+Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
 ### Fast invoicing
 Open **My Business** and save the business name, address, phone, email and optional reusable Cash App $cashtag profile once. Each new invoice then needs only the **customer name** and **invoice amount**; sender details, a new invoice reference, and the current date are filled in automatically. You can generate and share the invoice, print/save a PDF, or archive it locally if device saving is enabled. Existing invoice records are not silently rewritten when the saved business profile changes. The **Clear saved profile** control removes those defaults without deleting archived invoices.
 
 For a more complete job packet, expand **More details** to add service location, photos, work performed, customer email, paid amount, due date, and notes. The balance is calculated from invoice total minus recorded payments, and currency formatting adds thousands separators. Mark incoming payments manually after verifying them outside the app.
 
-A saved $cashtag creates a reusable Cash App *profile link*, which requires the customer to enter the invoice amount. The app cannot automatically generate a verified, amount-prefilled request from that profile. For an exact-amount request, create it in Cash App's Request flow, share the request-specific URL into the invoice, and confirm that the link matches the outstanding balance. If the balance changes, the confirmed link is marked stale until replaced. Closeout Pocket does not connect to Cash App or reconcile transactions.
+A saved $cashtag creates a reusable Cash App *profile link*, which requires the customer to enter the invoice amount. The app cannot automatically generate a verified, amount-prefilled request from that profile. For an exact-amount request, create it in Cash App's Request flow, share the request-specific URL into the invoice, and confirm that the link matches the outstanding balance. If the balance changes, the confirmed link is marked stale until replaced. Packet Lily does not connect to Cash App or reconcile transactions.
 
 Records and photos are saved in the current browser only when invoice archiving is enabled; the business profile is stored separately when you explicitly select **Save business details**. JSON export/import is provided for invoice archive backups. Email invoice opens a draft; it does not send automatically or attach the HTML report. Payment requests can be shared as message text. There is no backend or customer-login system.
 
-**Live Pages URL once Pages is enabled:** https://pomegranatexlily.github.io/Closeout-Pocket/
+**Existing GitHub Pages URL (retained for continuity):** https://pomegranatexlily.github.io/Closeout-Pocket/
 
 **To enable:** Repository → Settings → Pages → Build and deployment → Source: **GitHub Actions**. The existing `.github/workflows/deploy-pages.yml` workflow publishes the root app on pushes to `main`. If Pages has not been enabled yet, this is a one-time repository setting. Check the Actions tab for the latest deployment run.
 
@@ -44,3 +47,6 @@ Give three independent solo contractors a 10-minute task: complete a real or fab
 Record for each tester: trade, current invoicing method, total time, any confusing step, whether the payer could follow the request, and whether they would replace their current process or pay for this workflow. **Go/no-go:** At least two of three complete without coaching and say they would use it on the next job, and at least one agrees to a real paid pilot. Otherwise revise the workflow or stop expanding features.
 
 The existing app/short Home Screen name remains unchanged pending distinct product naming and brand clearance.
+
+## Brand change and continuity
+Packet Lily replaces the former Closeout Pocket product name. The public GitHub repository and Pages URL still contain `Closeout-Pocket` for compatibility with installed versions; do not move the site's path without planning storage, service-worker, manifest ID, and iPhone install migration. Old backups labeled `Closeout Pocket` are accepted by the current importer. This is a product rebrand, not a change to the legal terms, host or payment provider.
