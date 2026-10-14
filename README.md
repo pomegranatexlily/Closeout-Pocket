@@ -5,10 +5,20 @@
 ### Packet Lily design
 Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
+### Payment desk and completion (v3.1)
+
+Open **Preview → The Payment Desk** to record each payment only after confirming the funds through Cash App, your bank, or in person. Each entry records its amount, received date, method, optional reference and note, confirmation that the owner checked it, and a locally generated receipt reference. The running paid total and balance are calculated from active entries, so partial payments work without entering the full paid total manually.
+
+The **Receipt** button on each active owner-confirmed payment displays a branded customer receipt, with controls to download a self-contained HTML copy, print/save a PDF, or share the receipt text. The receipt states that it is business-owner-recorded and **not independently verified** by Packet Lily. A received payment is *never inferred* just because a Cash App link was opened or shared.
+
+Once recorded receipts total at least the invoice amount, choose **Complete & close invoice**, explicitly confirming that you checked the funds outside Packet Lily. A closed invoice appears as such in the archive; you may **Reopen invoice for corrections** and void a mistaken payment. Voided entries stay visible in the local history but stop counting toward the balance. The app is not an immutable ledger or payment processor.
+
+Past invoices from before the ledger are migrated on opening to **legacy payment entries**. They retain their previously recorded paid amount but are expressly marked unverified and do not receive newly fabricated payment receipts. The original archive format and localStorage keys remain readable; keep backups before editing real records.
+
 ### Fast invoicing
 Open **My Business** and save the business name, address, phone, email and optional reusable Cash App $cashtag profile once. Each new invoice then needs only the **customer name** and **invoice amount**; sender details, a new invoice reference, and the current date are filled in automatically. You can generate and share the invoice, print/save a PDF, or archive it locally if device saving is enabled. Existing invoice records are not silently rewritten when the saved business profile changes. The **Clear saved profile** control removes those defaults without deleting archived invoices.
 
-For a more complete job packet, expand **More details** to add service location, photos, work performed, customer email, paid amount, due date, and notes. The balance is calculated from invoice total minus recorded payments, and currency formatting adds thousands separators. Mark incoming payments manually after verifying them outside the app.
+For a more complete job packet, expand **More details** to add service location, photos, work performed, customer email, paid amount, due date, and notes. The balance is calculated from invoice total minus recorded payments, and currency formatting adds thousands separators. Record incoming payments in the Payment Desk only after verifying them outside the app.
 
 A saved $cashtag creates a reusable Cash App *profile link*, which requires the customer to enter the invoice amount. The app cannot automatically generate a verified, amount-prefilled request from that profile. For an exact-amount request, create it in Cash App's Request flow, share the request-specific URL into the invoice, and confirm that the link matches the outstanding balance. If the balance changes, the confirmed link is marked stale until replaced. Packet Lily does not connect to Cash App or reconcile transactions.
 
