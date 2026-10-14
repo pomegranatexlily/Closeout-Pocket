@@ -114,9 +114,9 @@ assert(app.receiptPdfFilename(state.payments[0]).endsWith('.pdf'),'receipt filen
 assert(!app.receiptPdfFilename(state.payments[0]).endsWith('.html'));
 pdf.arrayBuffer().then(bytes=>{
  const docBytes=Buffer.from(bytes), body=docBytes.toString('latin1');
- assert(body.startsWith('%PDF-1.4\\n'),'receipt must have a PDF signature');
+ assert(body.startsWith('%PDF-1.4\n'),'receipt must have a PDF signature');
  assert(body.includes('/Subtype /Image'),'PDF embeds branded receipt image');
- const ref=body.match(/startxref\\n(\\d+)\\n/);
+ const ref=body.match(/startxref\n(\d+)\n/);
  assert(ref,'PDF cross-reference table missing');
  assert.equal(body.slice(Number(ref[1]),Number(ref[1])+4),'xref','PDF byte offsets must be valid');
  console.log('Genuine PDF receipt validation passed.');
