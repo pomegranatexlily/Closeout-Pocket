@@ -2,7 +2,7 @@
 'use strict';
 const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1',K_PREFS='closeout-pocket-privacy-v1',K_PAYMENT_ACCOUNT='closeout-pocket-payment-account-v1',K_BUSINESS='closeout-pocket-business-v1';
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
-const demo=()=>({demoMode:true,company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
+const demo=()=>({demoMode:true,company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'0',payments:[],due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
 const blank=()=>({workflowVersion:2,preparedAt:'',payments:[],closedAt:'',company:'',phone:'',companyEmail:'',businessAddress:'',businessCity:'',businessState:'',businessZip:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
 const fields=['company','phone','companyEmail','businessAddress','businessCity','businessState','businessZip','customer','customerEmail','job','address','city','stateCode','zip','date','ref','summary','work','total','paid','due','paymentLink','notes'];
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
@@ -111,7 +111,7 @@ function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('sh
 const icons={build:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h4"/></svg>',preview:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',saved:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h14v18l-7-4-7 4z"/></svg>'};
 icons.business='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V5l8-3 8 3v16M3 21h18M9 9h6M9 13h6M10 21v-4h4v4"/></svg>';
 icons.home='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 11 9-8 9 8v10h-6v-7H9v7H3z"/></svg>';
-const labels={home:'Home',build:'New invoice',preview:'Invoice desk',saved:'Invoices',business:'My Business'};
+const labels={home:'Home',build:'Invoice',preview:'Invoice desk',saved:'Invoices',business:'My Business'};
 function nav(){
  for(const target of ['#sideNav','#bottomNav']){
   const host=$(target),keys=Object.keys(labels).filter(k=>target==='#sideNav'||k!=='home');
@@ -266,7 +266,9 @@ function renderRequiredSteps(){
  const progress=$('#requiredProgress');
  if(progress)progress.textContent=done+' / 3 ready';
 }
-function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=total-paid;$('#liveTotal').textContent=fmt(total);$('#livePaid').textContent=fmt(paid);$('#balanceLabel').textContent=bal>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(bal));renderRequiredSteps();const prior=$('#paid');if(prior)prior.value=fmt(paid)}
+// One integer-cent source of truth for invoice balances, from active ledger records.
+function invoiceAmounts(){const total=cents(state.total),paid=activePayments().reduce((sum,p)=>sum+cents(p.amount),0);return {total,paid,balance:total-paid,due:Math.max(0,total-paid)}}
+function renderBalance(){const {total,paid,balance}=invoiceAmounts();$('#liveTotal').textContent=fmt(total/100);$('#livePaid').textContent=fmt(paid/100);$('#balanceLabel').textContent=balance>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(balance)/100);renderRequiredSteps();const prior=$('#paid');if(prior){prior.value=fmt(paid/100);prior.textContent=fmt(paid/100)}}
 function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs').innerHTML=state.photos[kind].map((item,i)=>`<div class="thumb"><img src="${safe(item.data)}" alt="${kind} photo ${i+1}"><button type="button" data-remove-photo="${kind}:${i}" aria-label="Remove ${kind} photo ${i+1}">×</button></div>`).join('')}}
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
 function cashAppUrl(){
@@ -281,12 +283,12 @@ function isCashtagProfile(){
  try{return /^\/\$[a-z0-9_]{1,30}\/?$/i.test(new URL(cashAppUrl()).pathname)}catch(e){return false}
 }
 function paymentRequestState(){
- const url=cashAppUrl(),due=Math.max(0,num(state.total)-num(state.paid));
- if(due<=0.005)return 'paid';
+ const url=cashAppUrl(),{due}=invoiceAmounts();
+ if(due===0)return 'paid';
  if(!url)return 'missing';
  if(isCashtagProfile())return 'manual';
  if(state.paymentLinkNeedsRefresh)return 'stale';
- if(state.paymentRequestConfirmed&&state.paymentRequestConfirmedLink===url&&Math.round(num(state.paymentRequestAmount)*100)===Math.round(due*100))return 'exact';
+ if(state.paymentRequestConfirmed&&state.paymentRequestConfirmedLink===url&&cents(state.paymentRequestAmount)===due)return 'exact';
  if(state.paymentRequestConfirmed)return 'stale';
  return 'unconfirmed';
 }
@@ -295,7 +297,7 @@ function payableLink(){
  return status==='exact'||status==='manual'?cashAppUrl():'';
 }
 function renderPaymentStatus(){
- const status=paymentRequestState(),due=fmt(Math.max(0,num(state.total)-num(state.paid)));
+ const status=paymentRequestState(),due=fmt(invoiceAmounts().due/100);
  const el=$('#paymentLinkStatus'),check=$('#confirmPaymentAmount'),row=$('#confirmRequestRow');
  check.checked=status==='exact';
  check.disabled=!['exact','unconfirmed'].includes(status);
@@ -313,8 +315,8 @@ function renderPaymentStatus(){
  el.textContent=msg[status];
 }
 function paymentRequestText(){
- const balance=num(state.total)-num(state.paid),link=payableLink(),type=paymentRequestState();
- if(balance<=0.005||!link)return '';
+ const {due}=invoiceAmounts(),balance=due/100,link=payableLink(),type=paymentRequestState();
+ if(due===0||!link)return '';
  return [
   (state.company||'Packet Lily')+' · PAYMENT REQUEST',
   'Invoice '+(state.ref||'—'),
@@ -330,13 +332,13 @@ async function sharePaymentRequest(){
  if(state.demoMode===true&&!confirm('This is a sample Northside Home Services invoice. Share this request anyway?'))return;
  if(paymentShareInProgress){toast('The share window is already opening.');return}
  if(!invoicePrepared()){guideToDraft('Generate an invoice before sharing its payment request.');return}
- const balance=num(state.total)-num(state.paid),link=payableLink();
- if(balance<=0.005){toast('No balance is due on this invoice.');return}
+ const {due}=invoiceAmounts(),balance=due/100,link=payableLink();
+ if(due===0){toast('No balance is due on this invoice.');return}
  if(!link){
   toast('Paste a valid Cash App request and confirm its amount, or use a $cashtag profile link.');
   switchTo('build');focusOptionalField('#paymentLink');return;
  }
- const signature=[state.ref,state.customer,cents(balance),link].join('|');
+ const signature=[state.ref,state.customer,due,link].join('|');
  const previous=state.lastPaymentRequestShare;
  const recent=previous?.signature===signature&&Number.isFinite(Date.parse(previous.at))&&Date.now()-Date.parse(previous.at)<86400000;
  if(recent&&!confirm('You already opened this same payment request for sharing in the last 24 hours. Double-check the customer has not already paid. Share again?'))return;
@@ -415,7 +417,7 @@ function reconcilePaid(){
  return after;
 }
 function renderPaymentCenter(){
- const total=cents(state.total),paid=cents(state.paid),balance=total-paid,closed=Boolean(state.closedAt);
+ const {total,paid,balance,due}=invoiceAmounts(),closed=Boolean(state.closedAt);
  const complete=total>0&&balance<=0&&paid>0;
  const tag=$('#invoicePaymentStatus');
  tag.dataset.status=closed?'closed':complete?'paid':paid>0?'partial':'due';
@@ -440,7 +442,7 @@ function renderPaymentCenter(){
  const form=$('#recordPaymentForm');
  form.hidden=!invoicePrepared()||closed||balance<=0||total<=0;
  const amount=$('#payEntryAmount');
- if(!form.hidden&&!amount.value)amount.value=showMoney((balance/100).toFixed(2),true);
+ if(!form.hidden)amount.placeholder='Enter received amount (up to '+fmt(due/100)+')';
  if(!$('#payEntryDate').value)$('#payEntryDate').value=today();
  $('#closeInvoiceBtn').hidden=closed||!complete;
  $('#reopenInvoiceBtn').hidden=!closed;
@@ -931,7 +933,8 @@ function generatePacket(){
 }
 async function copySummary(){const total=num(state.total),paid=num(state.paid),balance=total-paid;const content=[`${state.company||'Service completion'} — Job Packet`,`Customer: ${state.customer||'—'}`,`Service address: ${fullAddress()||'—'}`,`Job: ${state.job||'—'}`,`Completed: ${niceDate(state.date)}`,`Work completed:\n${state.work||'—'}`,`Job total: ${fmt(total)}`,`Paid: ${fmt(paid)}`,`${balance<0?'Customer credit':'Balance due'}: ${fmt(Math.abs(balance))}`,state.notes?`Notes: ${state.notes}`:''].filter(Boolean).join('\n\n');try{await navigator.clipboard.writeText(content);toast('Summary copied to clipboard')}catch(e){const t=document.createElement('textarea');t.value=content;t.style.position='fixed';t.style.left='-9999px';document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('Summary copied to clipboard')}catch(e){toast('Copy unavailable in this browser')}t.remove()}}
 function startOver(next){lastPaymentTap={signature:'',at:0};state=normalize(next);$('#payEntryAmount').value='';$('#payEntryDate').value=today();$('#payEntryMethod').value='Cash App';$('#payEntryReference').value='';$('#payEntryNote').value='';$('#payOwnerConfirmed').checked=false;$('#generationBanner').hidden=true;receiptPaymentId=(state.payments||[]).filter(p=>p.source==='owner'&&!p.voidedAt).slice(-1)[0]?.id||'';const extras=$('#invoiceExtras');if(extras)extras.open=false;loadForm();autosave();switchTo('build')}
-function beginNewInvoice(){if((state.customer||num(state.total)>0||state.job||state.work||state.photos.before.length||state.photos.after.length)&&!confirm('Start a new invoice? Changes that are not archived will be replaced.'))return;startOver(newInvoice())}
+function beginNewInvoice(){if((state.customer||num(state.total)>0||state.job||state.work||activePayments().length||state.photos.before.length||state.photos.after.length)&&!confirm('Start a fresh, unpaid invoice? Unsaved changes in this editor will be replaced. Archived invoices and payment records will remain safe.'))return;startOver(newInvoice())}
+function loadDemoInvoice(){if((state.customer||cents(state.total)>0||state.job||state.work||activePayments().length||state.photos.before.length||state.photos.after.length)&&!confirm('Replace the current editor with an unpaid sample? Unsaved draft changes will be replaced; archived invoices remain safe.'))return;startOver(demo())}
 function focusOptionalField(selector){const details=$('#invoiceExtras');if(details)details.open=true;const input=$(selector);if(input)input.focus();}
 function updateFieldFromInput(e){
  const el=e.target;if(!el.dataset.field)return;
@@ -978,7 +981,7 @@ $('#saveBusinessBtn').addEventListener('click',saveBusinessSettings);
 $('#clearBusinessBtn').addEventListener('click',clearBusinessSettings);
 $('#applyBusinessBtn').addEventListener('click',()=>applyBusinessToInvoice());
 $('#copyCashRequestBtn').addEventListener('click',async()=>{
- const amount=fmt(Math.max(0,num(state.total)-num(state.paid)));
+ const amount=fmt(invoiceAmounts().due/100);
  const note=(state.ref||'Invoice')+' · '+(state.job||'Service');
  const message='Request amount: '+amount+'\nCash App note: '+note;
  try{await navigator.clipboard.writeText(message);toast('Exact request amount and note copied. Open Cash App → Request.')}catch(e){toast('Copy unavailable. Request '+amount+' in Cash App.')}
@@ -987,7 +990,7 @@ $('#confirmPaymentAmount').addEventListener('change',e=>{
  if(!e.target.checked){state.paymentRequestConfirmed=false;state.paymentRequestAmount='';state.paymentRequestConfirmedLink=''}
  else if(paymentRequestState()==='unconfirmed'){
   state.paymentRequestConfirmed=true;
-  state.paymentRequestAmount=cleanMoney(String(num(state.total)-num(state.paid)));
+  state.paymentRequestAmount=(invoiceAmounts().due/100).toFixed(2);
   state.paymentRequestConfirmedLink=cashAppUrl();
   state.paymentLinkNeedsRefresh=false;
  }
@@ -1013,7 +1016,8 @@ $('#returnToDeskBtn').addEventListener('click',()=>setAudienceMode('owner'));
 $('#copyBtn').addEventListener('click',copySummary);
 $('#saveBtn').addEventListener('click',()=>savePacket(false));
 $('#blankBtn').addEventListener('click',beginNewInvoice);
-$('#demoBtn').addEventListener('click',()=>startOver(demo()));
+$('#demoBtn').addEventListener('click',loadDemoInvoice);
+$('#openPaymentsFromBuild').addEventListener('click',()=>{if(!invoicePrepared()){toast('Generate this invoice first, then record received payments in the Payment Desk.');$('#previewBtn').focus();return}switchTo('preview');setDeskSection('payments',true)});
 loadForm();nav();renderStorageChoice();renderBusinessSettings();switchTo('home');updateConnectivityUI();
  if(typeof window.addEventListener==='function'){window.addEventListener('online',updateConnectivityUI);window.addEventListener('offline',updateConnectivityUI)}
 if('serviceWorker' in navigator && window.isSecureContext){navigator.serviceWorker.register('./sw.js').catch(()=>{});}

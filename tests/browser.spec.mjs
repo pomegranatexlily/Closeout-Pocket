@@ -143,3 +143,74 @@ test('static shell and a draft stay usable after going offline',async({page,cont
  await page.locator('#bottomNav [data-switch="build"]').click();
  await expect(page.locator('#customer')).toHaveValue('Offline local draft');
 });
+
+
+test('Cash App request never marks paid; real cash ledger entries reconcile all totals',async({page})=>{
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto('./');
+ await page.locator('#bottomNav [data-switch="build"]').click();
+ await page.locator('#demoBtn').click();
+ await expect(page.locator('#liveTotal')).toHaveText('$250.00');
+ await expect(page.locator('#livePaid')).toHaveText('$0.00');
+ await expect(page.locator('#liveBalance')).toHaveText('$250.00');
+ await expect(page.locator('#bottomNav [data-switch="build"]')).toContainText('Invoice');
+ await page.locator('#invoiceExtras > summary').click();
+ const paidDisplay=page.locator('#paid');
+ expect(await paidDisplay.evaluate(el=>el.tagName)).toBe('OUTPUT');
+ await expect(paidDisplay).toHaveText('$0.00');
+ await page.locator('#paymentLink').fill('https://cash.app/pay/TestRequestNotPayment');
+ await page.locator('#confirmPaymentAmount').check();
+ await expect(page.locator('#paymentLinkStatus')).toContainText('does not prove the customer has paid');
+ await expect(page.locator('#livePaid')).toHaveText('$0.00');
+ await page.locator('#previewBtn').click();
+ await page.locator('#paymentsViewBtn').click();
+ await expect(page.locator('#payEntryAmount')).toBeEmpty();
+ await expect(page.locator('#deskBalanceTotal')).toHaveText('$250.00');
+ await page.locator('#payEntryAmount').fill('50.00');
+ await page.locator('#payEntryMethod').selectOption('Cash');
+ await page.locator('#payOwnerConfirmed').check();
+ await page.locator('#recordPaymentBtn').click();
+ await expect(page.locator('#deskPaidTotal')).toHaveText('$50.00');
+ await expect(page.locator('#deskBalanceTotal')).toHaveText('$200.00');
+ await expect(page.locator('#liveBalance')).toHaveText('$200.00');
+ await page.locator('#bottomNav [data-switch="build"]').click();
+ await expect(page.locator('#paid')).toHaveText('$50.00');
+ await expect(page.locator('#paymentLinkStatus')).toContainText('balance or payment link changed');
+ await page.locator('#openPaymentsFromBuild').click();
+ await expect(page.locator('#deskPayments')).toBeVisible();
+ await page.locator('[data-void-payment]').click();
+ await expect(page.locator('#deskPaidTotal')).toHaveText('$0.00');
+ await expect(page.locator('#deskBalanceTotal')).toHaveText('$250.00');
+});
+
+test('new invoice starts unpaid and clears sample without altering existing records',async({page})=>{
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto('./');
+ await page.locator('#bottomNav [data-switch="build"]').click();
+ await page.locator('#demoBtn').click();
+ await page.locator('#blankBtn').click();
+ await expect(page.locator('#customer')).toHaveValue('');
+ await expect(page.locator('#total')).toHaveValue('');
+ await expect(page.locator('#livePaid')).toHaveText('$0.00');
+ await expect(page.locator('#paid')).toHaveText('$0.00');
+ await expect(page.locator('#sampleInvoiceNotice')).toBeHidden();
+});
+
+test('small fractional payments sum in integer cents, without rounding drift',async({page})=>{
+ await page.goto('./');
+ await page.locator('#bottomNav [data-switch="build"]').click();
+ await page.locator('#demoBtn').click();
+ await page.locator('#total').fill('0.30');
+ await page.locator('#previewBtn').click();
+ await page.locator('#paymentsViewBtn').click();
+ for(const amount of ['0.10','0.20']){
+  await page.locator('#payEntryAmount').fill(amount);
+  await page.locator('#payEntryMethod').selectOption('Cash');
+  await page.locator('#payOwnerConfirmed').check();
+  await page.locator('#recordPaymentBtn').click();
+  if(amount==='0.10')await page.locator('#paymentsViewBtn').click();
+ }
+ await expect(page.locator('#livePaid')).toHaveText('$0.30');
+ await expect(page.locator('#liveBalance')).toHaveText('$0.00');
+ await expect(page.locator('#deskBalanceTotal')).toHaveText('$0.00');
+});
