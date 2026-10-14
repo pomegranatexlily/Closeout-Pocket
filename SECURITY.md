@@ -11,6 +11,15 @@ Packet Lily is a **client-only field-test application**, not a protected product
 - Payment links must use HTTPS on Cash App's actual domain. Exact-amount requests require operator confirmation for the matching invoice balance and are invalidated after balance changes.
 - The offline service worker caches **only public app shell files** (not customer records or reports).
 
+## Payment desk (manual only)
+
+- Payments must be checked by the business owner outside this app; the checkbox is an attestation by the operator and is not independently verifiable.
+- Recorded partial payments have a date, method, optional reference, local entry ID, and manual-confirmation flag. Voided entries remain in history but do not contribute to received totals.
+- Closing an invoice requires a zero balance and an explicit operator confirmation. Reopening enables corrections and changes the archived status.
+- Downloadable receipts describe the business owner's own record. They are **not payment-processor receipts or bank confirmations**.
+- Historical amounts paid before the ledger are migrated as labeled legacy records and do not silently become independently verified payments.
+- This localStorage ledger and its exports are editable. No immutable audit log, identity verification, PCI scope, authenticated access, or gateway webhooks exist.
+
 ## Important remaining risks — NOT production safe
 1. **Shared GitHub Pages origin.** Any unrelated site running JavaScript under `pomegranatexlily.github.io` shares browser-origin privileges with this app. Different URL paths are NOT a customer-data security boundary.
 2. **Unencrypted local data.** Local drafts, invoice archives, and JSON exports contain plaintext names, contact information, addresses, photos and balances. LocalStorage cannot provide user authentication, device sync, secure multi-user access, or guaranteed durable backups.
