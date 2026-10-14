@@ -118,7 +118,7 @@ async function zip(files){
  return new Blob(output,{type:'application/zip'});
 }
 async function buildPackage(records,scope,receiptPdf,progress=()=>{}){
- const copies=records.map(r=>structuredClone?structuredClone(r):JSON.parse(JSON.stringify(r)));
+ const copies=records.map(r=>typeof structuredClone==='function'?structuredClone(r):JSON.parse(JSON.stringify(r)));
  const months=availableMonths(copies);
  if(scope!=='all'&&!months.includes(scope))throw Error('That month has no saved records.');
  const selected=copies.filter(r=>scope==='all'||monthKey(r.date||r.savedAt)===scope||(r.payments||[]).some(p=>!p.voidedAt&&monthKey(p.date)===scope));
