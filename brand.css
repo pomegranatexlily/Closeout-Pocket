@@ -370,3 +370,29 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-vi
  .filing-actions .btn{flex:1 1 100%;font-size:13px}
 }
 @media print{.filing-panel{display:none!important}}
+
+
+/* Packet Lily v3.8: guided issuance, manual payment, closeout and receipt unlocks. */
+.workflow-guide{max-width:1030px;margin:0 auto 15px;background:linear-gradient(115deg,#fff,#faf7ff);border:1px solid #e1d2ed;border-radius:18px;padding:18px 21px;box-shadow:0 9px 25px rgba(49,27,77,.045)}
+.workflow-guide-header{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.workflow-guide-header h3{font-size:19px;margin:1px 0 0;color:#301e40;letter-spacing:-.5px}
+.workflow-step{border:1px solid #e3d5ed;background:#f2eaf9;padding:8px 10px;border-radius:100px;color:#6b478c;font-size:11px;font-weight:840;white-space:nowrap}
+.workflow-progress{height:7px;width:100%;background:#efe7f6;overflow:hidden;border-radius:9px;margin:17px 0 12px}
+.workflow-progress span{display:block;height:100%;width:25%;background:linear-gradient(90deg,#6942a1,#d9a3e5);border-radius:inherit;transition:width .25s}
+.workflow-guide p{font-size:12px;color:#776a83;line-height:1.6;margin:0 0 13px}
+.workflow-guide .btn{min-height:39px}
+.audience-option[disabled],.audience-option[aria-disabled="true"]{opacity:.46;cursor:not-allowed;box-shadow:none!important}
+.overview-next .btn[disabled],.preview-actions .btn[disabled]{opacity:.43;cursor:not-allowed}
+.archive-status-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0 18px}
+.archive-status-tab{border:1px solid #ded1e7;background:#fff;color:#635370;border-radius:14px;padding:12px 16px;min-height:44px;display:inline-flex;gap:9px;align-items:center;font-size:12px;font-weight:840}
+.archive-status-tab span{font-size:11px;min-width:21px;border-radius:100px;background:#f1ebf5;padding:3px 7px;color:#695279}
+.archive-status-tab.active{background:#5b368e;border-color:#5b368e;color:#fff}
+.archive-status-tab.active span{background:#ffffff25;color:#fff}
+@media(max-width:680px){
+ .workflow-guide{padding:17px 15px}
+ .workflow-guide-header h3{font-size:17px}
+ .workflow-step{font-size:10px}
+ .archive-status-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+ .archive-status-tab{font-size:11px;padding:10px 7px;justify-content:center;flex-wrap:wrap;border-radius:11px}
+}
+@media print{.workflow-guide,.archive-status-tabs{display:none!important}}
