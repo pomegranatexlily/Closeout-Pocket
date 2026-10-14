@@ -5,6 +5,14 @@
 ### Packet Lily design
 Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
+### PDF exports, demo and Cash App clarity (v4.0)
+
+**Share PDF job packet** and **Save PDF job packet** now generate a real `.pdf` from the app's local canvas-based filing engine, rather than exporting an `.html` webpage. The PDF includes an initial customer invoice followed by additional pages containing the job description, detailed work, notes and available before/after photos. The standard invoice and post-closeout payment receipts remain separate PDF options. iPhone sharing uses the native file share sheet when supported, otherwise falls back to downloading a PDF into Files. PDF creation and sharing do not send customer data to a document-conversion server.
+
+A saved Cash App **$cashtag profile** is not an amount-specific Request, so the separate **I created a Cash App Request for this exact amount** checkbox is intentionally hidden with clear instructions that the customer must type the balance manually. The checkbox becomes available when a non-profile Cash App request link is supplied, and is not evidence a payment was received.
+
+The **Load sample for testing** action labels the fictional Northside Home Services business and asks before sending a demo invoice by email or payment request. Replace it with the real profile in My Business before sharing with actual customers. Browser tests verify both Cash App modes, actual PDF output, and the sample warning. This does not introduce Cash App APIs or automatic transfer reconciliation.
+
 ### Mobile reliability and free browser QA (v3.9)
 
 Packet Lily keeps its existing static GitHub Pages architecture and does not require a paid AI platform or web server to run. Quality changes in this version:
