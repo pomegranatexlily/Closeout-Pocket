@@ -9,7 +9,7 @@ assert(fs.readFileSync('brand.css','utf8').includes('.payment-center'));
 assert(manifest.name==='Packet Lily');
 assert(script.includes("['Closeout Pocket','Packet Lily']"),'old archives remain importable');
 assert(script.includes('closeout-pocket-draft-v1'),'old browser drafts remain available');
-for(const id of ['ownerViewBtn','customerViewBtn','customerPreviewNotice','returnToDeskBtn','recordPaymentForm','closeInvoiceBtn','reopenInvoiceBtn','receiptDocument','paymentLog','sharePaymentBtn','confirmPaymentAmount'])assert(index.includes('id="'+id+'"'),id+' is missing');
+for(const id of ['screen-home','ownerViewBtn','customerViewBtn','customerPreviewNotice','returnToDeskBtn','recordPaymentForm','closeInvoiceBtn','reopenInvoiceBtn','receiptDocument','paymentLog','sharePaymentBtn','confirmPaymentAmount'])assert(index.includes('id="'+id+'"'),id+' is missing');
 assert(index.includes('src="app.js" defer'));
 assert(manifest.start_url==='/Closeout-Pocket/');
 assert(fs.readFileSync('apple-touch-icon.png').subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')));
@@ -20,7 +20,7 @@ assert(script.includes(seam));
 const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,setDeskSection,makeReceiptPdf,receiptPdfFilename,receiptText};');
 const events={},els=new Map();
 function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){},setAttribute(name,value){this[name]=value}});return els.get(key)}
-const screens=['build','preview','saved','business'].map(name=>({id:'screen-'+name,active:name==='build',classList:{toggle(flag,on){if(flag==='active')this.owner.active=on},owner:null}}));
+const screens=['home','build','preview','saved','business'].map(name=>({id:'screen-'+name,active:name==='home',classList:{toggle(flag,on){if(flag==='active')this.owner.active=on},owner:null}}));
 for(const screen of screens)screen.classList.owner=screen;
 const canvasContext={
  scale(){},fillRect(){},fillText(){},createLinearGradient(){return {addColorStop(){}}},
@@ -36,11 +36,16 @@ const app=new Function('document','window','localStorage','navigator','URL','Blo
 function tapTab(tab){events.click({target:{closest(selector){return selector==='[data-switch]'?{dataset:{switch:tab}}:null}}})}
 tapTab('business');
 assert.equal(element('#crumb').textContent,'My Business','My Business must open when selected');
+assert(index.includes('<section id="screen-home" class="screen active"'),'Home must be the initial landing screen');
+assert(index.indexOf('<section class="hero">')>index.indexOf('id="screen-home"'),'marketing banner belongs to Home');
+assert(index.indexOf('<section class="hero">')<index.indexOf('id="screen-build"'),'marketing banner cannot be part of New invoice');
+assert(index.includes('class="home-return" data-switch="home"'),'Home shortcut exists');
+assert(screens.find(v=>v.id==='screen-home').active===false,'Home hides when another workspace opens');
 assert(screens.find(v=>v.id==='screen-business').active,'business screen must become active');
 assert(!screens.find(v=>v.id==='screen-build').active,'previous screen must be hidden');
 tapTab('preview');
 assert(screens.find(v=>v.id==='screen-preview').active,'preview must remain navigable');
-assert(element('.hero').hidden,'Marketing hero must be hidden on contractor desk');
+assert(!screens.find(v=>v.id==='screen-home').active,'Marketing hero must be outside the active invoice desk');
 app.setDeskSection('payments');
 assert(!element('#deskPayments').hidden,'payments subtab is visible');
 assert(element('#deskOverview').hidden,'overview is hidden on payments');
@@ -55,6 +60,13 @@ tapTab('saved');
 assert(screens.find(v=>v.id==='screen-saved').active,'invoice archive must remain navigable');
 tapTab('build');
 assert(screens.find(v=>v.id==='screen-build').active,'quick invoice must remain navigable');
+tapTab('home');
+assert(screens.find(v=>v.id==='screen-home').active,'Home must be reachable from every workspace');
+assert(!screens.find(v=>v.id==='screen-build').active,'Invoice form hides on Home');
+assert.equal(element('#crumb').textContent,'Home');
+tapTab('build');
+assert(screens.find(v=>v.id==='screen-build').active,'Home must return to existing in-progress invoice form');
+
 assert.equal(app.getSaving(),false,'new visitor saving must be opt-in');
 const state=app.getState();
 Object.assign(state,{company:'Test Contractor',customer:'Test Customer',job:'Fixture installed',ref:'TEST-001',total:'250',paid:'0',date:'2026-10-13',paymentLink:'https://cash.app/$Example'});
@@ -148,4 +160,4 @@ console.log('Packet Lily payment ledger and closeout smoke tests passed.');
 assert(index.includes('Customer copy'));
 assert(index.includes('id="deskPayments"'));
 assert(index.includes('id="deskReceipts"'));
-console.log('Contractor/customer view separation and compact invoice sections passed.');
+console.log('Contractor/customer view separation, dedicated Home and compact invoice sections passed.');
