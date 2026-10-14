@@ -68,10 +68,26 @@ assert.equal(app.getSaving(),false,'new visitor saving must be opt-in');
 const state=app.getState();
 Object.assign(state,{company:'Test Contractor',customer:'Test Customer',job:'Fixture installed',ref:'TEST-001',total:'250',paid:'0',date:'2026-10-13',paymentLink:'https://cash.app/$Example'});
 assert.equal(app.paymentRequestState(),'manual');
+assert(index.includes('id="confirmRequestRow"'),'exact amount checkbox wrapper required');
+const initialProfileStatus=app.paymentRequestState();
+const caseScript=script.includes("row.hidden=!['exact','unconfirmed'].includes(status)");
+assert(caseScript,'Cash App profile must hide the inapplicable exact-amount checkbox');
 app.generatePacket();assert.equal(app.getSaved().length,0,'opt-in required to save');
 app.chooseDeviceSaving(true);app.generatePacket();
 assert.equal(app.getSaved().length,1);
 assert.equal(app.invoiceStage(),'unpaid');
+assert(index.includes('Share PDF job packet'),'share button must no longer promise an HTML file');
+assert(index.includes('Save PDF job packet'),'save button must no longer promise HTML');
+app.reportFile().then(async packet=>{
+ assert.equal(packet.blob.type,'application/pdf','shared report must be a PDF blob');
+ assert(packet.name.endsWith('.pdf'),'shared report filename must end .pdf');
+ assert(!packet.name.endsWith('.html'));
+ const data=Buffer.from(await packet.blob.arrayBuffer()).toString('latin1');
+ assert(data.startsWith('%PDF-1.4'),'report must be a genuine PDF');
+ assert(data.includes('/Count 2'),'job description should extend invoice to a detail page');
+ console.log('Multipage customer job-packet PDF smoke test passed.');
+}).catch(e=>{console.error(e);process.exitCode=1});
+
 assert.equal(win.PacketLilyArchive.availableMonths([{...state,preparedAt:'',workflowVersion:2}]).length,0,'PDF filing must not include draft-only invoices');
 assert(win.PacketLilyArchive.availableMonths([{...state}]).length>0,'prepared invoices are eligible for filing');
 assert(!app.receiptsUnlocked(),'creating an invoice must not unlock receipts');
