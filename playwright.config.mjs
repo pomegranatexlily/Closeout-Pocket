@@ -1,7 +1,7 @@
 import {defineConfig,devices} from '@playwright/test';
 export default defineConfig({
- testDir:'./tests',testMatch:'browser.spec.mjs',timeout:45000,
- expect:{timeout:10000},fullyParallel:false,retries:process.env.CI?1:0,
+ testDir:'./tests',testMatch:'browser.spec.mjs',timeout:25000,
+ expect:{timeout:10000},fullyParallel:false,retries:0,
  reporter:process.env.CI?'github':'list',
  use:{baseURL:'http://127.0.0.1:4173/Closeout-Pocket/',trace:'retain-on-failure',screenshot:'only-on-failure'},
  projects:[
