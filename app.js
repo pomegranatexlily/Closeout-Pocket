@@ -632,18 +632,33 @@ function saveCurrentMonthToFiles(){
 function renderSaved(){
  renderFilingOptions();
  const wrap=$('#savedList');
+ const all=saved.map((p,i)=>({p,i}));
+ const paid=p=>Boolean(p.closedAt)&&cents(p.total)>0&&cents(p.paid)>=cents(p.total);
+ const unpaidCount=all.filter(({p})=>!paid(p)).length,paidCount=all.filter(({p})=>paid(p)).length;
+ $('#unpaidCount').textContent=String(unpaidCount);
+ $('#paidCount').textContent=String(paidCount);
+ $('#allCount').textContent=String(saved.length);
+ for(const btn of $$('[data-archive-status]')){
+  const active=btn.dataset.archiveStatus===archiveFilter;
+  btn.classList.toggle('active',active);
+  btn.setAttribute('aria-pressed',String(active));
+ }
  const term=($('#archiveSearch').value||'').trim().toLowerCase();
- const records=saved.map((p,i)=>({p,i})).filter(({p})=>[p.customer,p.customerEmail,p.job,p.ref,p.company].some(v=>String(v||'').toLowerCase().includes(term)));
+ const records=all.filter(({p})=>(archiveFilter==='all'||(archiveFilter==='paid'?paid(p):!paid(p)))&&
+  [p.customer,p.customerEmail,p.job,p.ref,p.company].some(v=>String(v||'').toLowerCase().includes(term)));
  const outstanding=saved.reduce((sum,p)=>sum+Math.max(0,num(p.total)-num(p.paid)),0);
- $('#archiveStats').textContent=saved.length+' invoices · '+fmt(outstanding)+' outstanding';
- if(!saved.length){wrap.innerHTML='<div class="empty"><strong>No invoices archived yet.</strong><p>Generate a Job Packet or select Save to archive to keep a copy here.</p><button class="btn primary" data-switch="build">Create your first invoice</button></div>';return}
- if(!records.length){wrap.innerHTML='<div class="empty"><strong>No matching invoices.</strong><p>Search by customer, job, or invoice number.</p></div>';return}
+ $('#archiveStats').textContent=unpaidCount+' unpaid · '+paidCount+' paid & closed · '+fmt(outstanding)+' outstanding';
+ if(!records.length){
+  wrap.innerHTML='<div class="empty"><strong>'+(saved.length?'No matching '+(archiveFilter==='paid'?'paid & closed':archiveFilter==='unpaid'?'unpaid':'')+' invoices.':'No invoices archived yet.')+'</strong><p>'+(saved.length?'Switch invoice status or adjust your search.':'Create an invoice to start building your records.')+'</p><button type="button" class="btn primary" data-switch="build">New invoice</button></div>';
+  return;
+ }
  wrap.innerHTML='<div class="saved-list">'+records.map(({p,i})=>{
-  const balance=num(p.total)-num(p.paid);
-  const label=p.closedAt?'✓ Closed • paid in full':balance>0.005?'Outstanding '+fmt(balance):balance<-.005?'Credit '+fmt(-balance):'Paid in full • not closed';
-  return '<div class="saved-item"><div><h3>'+dash(p.ref||'No invoice #')+' · '+dash(p.job||'Invoice')+'</h3><p>'+dash(p.customer||'No customer')+' · '+dash(p.customerEmail||'No email')+' · '+niceDate(p.date)+'</p><p>Total '+fmt(num(p.total))+' · Paid '+fmt(num(p.paid))+'</p><span class="archive-pill">'+safe(label)+'</span></div><div class="actions"><button class="btn small" data-open="'+i+'">Open</button><button class="btn primary small" data-pay-open="'+i+'">Payments &amp; receipts</button><button class="btn small danger" data-delete="'+i+'">Delete</button></div></div>';
+  const balance=num(p.total)-num(p.paid),closed=paid(p);
+  const stage=closed?'Closed · paid in full':balance>0.005?(num(p.paid)>0?'Partially paid · '+fmt(balance)+' due':'Unpaid · '+fmt(balance)+' due'):'Payment recorded · needs closeout';
+  return '<div class="saved-item"><div><h3>'+dash(p.ref||'No invoice #')+' · '+dash(p.job||'Invoice')+'</h3><p>'+dash(p.customer||'No customer')+' · '+niceDate(p.date)+'</p><p>Total '+fmt(num(p.total))+' · Recorded '+fmt(num(p.paid))+'</p><span class="archive-pill">'+safe(stage)+'</span></div><div class="actions"><button type="button" class="btn small" data-open="'+i+'">Open</button><button type="button" class="btn primary small" data-pay-open="'+i+'">'+(closed?'View closed job':'Continue payment')+'</button><button type="button" class="btn small danger" data-delete="'+i+'">Delete</button></div></div>';
  }).join('')+'</div>';
 }
+
 async function shrink(file){return new Promise((resolve,reject)=>{const img=new Image();let blobUrl=URL.createObjectURL(file);img.onload=()=>{try{const m=1150,scale=Math.min(1,m/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);const data=canvas.toDataURL('image/jpeg',.76);URL.revokeObjectURL(blobUrl);resolve(data)}catch(e){URL.revokeObjectURL(blobUrl);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(blobUrl);reject(new Error('Image could not be read'))};img.src=blobUrl})}
 async function photosFrom(kind,files){if(state.closedAt){toast('Reopen this invoice before changing its photos.');return}let remaining=Math.max(0,4-state.photos[kind].length);if(!remaining){toast('Maximum four '+kind+' photos.');return}let added=0;for(const f of Array.from(files).slice(0,remaining)){if(!f.type.startsWith('image/'))continue;try{const data=await shrink(f);state.photos[kind].push({data,name:f.name});added++}catch(e){toast('Could not read '+f.name)}}renderThumbs();renderReport();autosave();if(added)toast(`${added} ${kind} photo${added!==1?'s':''} added`)}
 function snapshot(){
@@ -878,7 +893,7 @@ document.addEventListener('blur',e=>{
  }
 },true);
 
-document.addEventListener('click',e=>{const fresh=e.target.closest('[data-new-invoice]');if(fresh){beginNewInvoice();return}const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const rm=e.target.closest('[data-remove-photo]');if(rm){if(state.closedAt){toast('Reopen this invoice before removing photos.');return}const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const payOpen=e.target.closest('[data-pay-open]');if(payOpen){const item=saved[Number(payOpen.dataset.payOpen)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));switchTo('preview');setDeskSection('payments',true);}return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));toast('Archived invoice opened')}return}const voidBtn=e.target.closest('[data-void-payment]');if(voidBtn){voidPayment(voidBtn.dataset.voidPayment);return}const receiptBtn=e.target.closest('[data-view-receipt]');if(receiptBtn){receiptPaymentId=receiptBtn.dataset.viewReceipt;renderPaymentCenter();setDeskSection('receipts',true);return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Invoice deleted from archive')}return}});
+document.addEventListener('click',e=>{const fresh=e.target.closest('[data-new-invoice]');if(fresh){beginNewInvoice();return}const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const statusBtn=e.target.closest('[data-archive-status]');if(statusBtn){archiveFilter=statusBtn.dataset.archiveStatus;renderSaved();return}const rm=e.target.closest('[data-remove-photo]');if(rm){if(state.closedAt){toast('Reopen this invoice before removing photos.');return}const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const payOpen=e.target.closest('[data-pay-open]');if(payOpen){const item=saved[Number(payOpen.dataset.payOpen)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));if(invoicePrepared()){switchTo('preview');setDeskSection(item.closedAt?'receipts':'payments',true);}else switchTo('build');}return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));toast('Archived invoice opened')}return}const voidBtn=e.target.closest('[data-void-payment]');if(voidBtn){voidPayment(voidBtn.dataset.voidPayment);return}const receiptBtn=e.target.closest('[data-view-receipt]');if(receiptBtn){if(!receiptsUnlocked()){toast('Close the fully paid invoice to unlock its receipt.');return}receiptPaymentId=receiptBtn.dataset.viewReceipt;renderPaymentCenter();setDeskSection('receipts',true);return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Invoice deleted from archive')}return}});
 $('#payEntryAmount').addEventListener('input',e=>applyMoneyTyping(e.target));
 $('#recordPaymentForm').addEventListener('submit',e=>{e.preventDefault();recordPayment()});
 $('#closeInvoiceBtn').addEventListener('click',closeInvoice);
@@ -917,6 +932,7 @@ $('#confirmPaymentAmount').addEventListener('change',e=>{
 });
 $('#sharePaymentBtn').addEventListener('click',sharePaymentRequest);
 $('#archiveSearch').addEventListener('input',renderSaved);
+ $('#workflowNextBtn').addEventListener('click',workflowNext);
 $('#saveMonthZipBtn').addEventListener('click',()=>fileToDevice($('#filingMonth').value));
 $('#saveAllZipBtn').addEventListener('click',()=>fileToDevice('all'));
 $('#saveMonthDeskBtn').addEventListener('click',saveCurrentMonthToFiles);
