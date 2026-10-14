@@ -295,16 +295,19 @@ function payableLink(){
 }
 function renderPaymentStatus(){
  const status=paymentRequestState(),due=fmt(Math.max(0,num(state.total)-num(state.paid)));
- const el=$('#paymentLinkStatus'),check=$('#confirmPaymentAmount');
+ const el=$('#paymentLinkStatus'),check=$('#confirmPaymentAmount'),row=$('#confirmRequestRow');
  check.checked=status==='exact';
- check.disabled=['manual','missing','paid','stale'].includes(status);
+ check.disabled=!['exact','unconfirmed'].includes(status);
+ // A reusable $cashtag is a profile, not an amount-specific Request. Hiding the checkbox
+ // avoids a disabled control that looks broken or implies the amount is prefilled.
+ if(row)row.hidden=!['exact','unconfirmed'].includes(status);
  const msg={
   paid:'Paid in full. No payment request needed.',
-  missing:'Paste a Cash App request link to enable payments.',
-  manual:'This is a $cashtag profile link. The customer must enter '+due+' manually.',
-  unconfirmed:'Confirm you requested exactly '+due+' inside Cash App.',
-  stale:'Invoice balance changed or link mismatch. Create a new Cash App request for '+due+'.',
-  exact:'Amount-specific request confirmed by you for '+due+'.'
+  missing:'No Cash App payment link configured. Add your real $cashtag under My Business or paste an amount-specific Request link here.',
+  manual:'Cash App profile link is ready. There is no exact-amount checkbox for a $cashtag: the customer must enter '+due+' themselves. You can still send the invoice.',
+  unconfirmed:'Exact-amount Request link: check the box only after you created a separate Cash App Request for '+due+'.',
+  stale:'The balance or payment link changed. Create a new Cash App Request matching '+due+' and paste its link before confirming.',
+  exact:'Amount-specific Cash App Request confirmed by you for '+due+'. This does not prove the customer has paid.'
  };
  el.textContent=msg[status];
 }
