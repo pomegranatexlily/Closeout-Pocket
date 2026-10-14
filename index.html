@@ -113,9 +113,9 @@
 <main class="main"><header class="topbar"><div class="crumb">Workspace <span aria-hidden="true"> / </span> <strong id="crumb">New invoice</strong></div><div class="top-actions"><span class="tiny-pill">● &nbsp; On-device workspace</span><span class="avatar" title="Pomegranate × Lily">P</span></div></header>
 <section class="hero"><div><div class="overline">Built for work that speaks for itself</div><h1>Finish the job.<br>Send the invoice.</h1><p>Invoice in seconds using saved business details. Add proof of work when you need it.</p></div><div class="hero-art" aria-hidden="true"><span></span><span></span><span></span><b>✓</b></div></section>
 <div id="screen-build" class="screen active">
-<section class="privacy-notice" id="deviceSaveNotice" hidden><strong>Your invoices stay on this device</strong><p>Choose whether Closeout Pocket can save drafts, photos, and invoices in this browser. No cookies or third-party tracking are used. Local storage is not an encrypted cloud backup.</p><div class="action-bar"><button class="btn primary small" type="button" id="enableDeviceSaveBtn">Enable local saving</button><button class="btn small" type="button" id="sessionOnlyBtn">Use without saving</button></div></section>
+<section class="privacy-notice" id="deviceSaveNotice" hidden><strong>Your invoices stay on this device</strong><p>Choose whether Closeout Pocket can save drafts, photos, and invoices in this browser. No cookies or third-party tracking are used. Local storage is not an encrypted cloud backup.</p><div class="action-bar"><button class="btn primary small" type="button" id="enableDeviceSaveBtn">Enable local saving</button><button class="btn small" type="button" id="sessionOnlyBtn">Don't archive invoices</button></div></section>
 
-<div class="section-title"><div><h2>New invoice</h2><p>Customer and amount first. Your business information is already saved.</p></div><button type="button" class="btn small" data-switch="business">My Business</button></div>
+<div class="section-title"><div><h2>New invoice</h2><p>Customer and amount first. Your saved business profile fills in automatically.</p></div><button type="button" class="btn small" data-switch="business">My Business</button></div>
 <div class="quick-invoice-layout">
 <section class="card quick-invoice-card">
 <div class="card-head"><span class="card-num">01</span><div><h3>Quick invoice</h3><p id="businessOnInvoice">Your business details are loaded automatically.</p></div></div>
@@ -159,14 +159,14 @@
 <div class="field span"><label for="defaultCashApp">Cash App receiving account (optional)</label><input id="defaultCashApp" autocomplete="off" spellcheck="false" placeholder="$YourCashtag or https://cash.app/$YourCashtag"><small>Use a reusable Cash App profile, not an amount-specific request. Customers enter the amount manually when paying by profile link.</small></div>
 </div>
 <small id="defaultCashStatus" role="status" aria-live="polite"></small>
-<div class="action-bar"><button class="btn primary" id="saveBusinessBtn">Save business details</button><button class="btn" id="applyBusinessBtn">Apply to current invoice</button><button class="btn small" data-switch="build">New invoice →</button></div>
+<div class="action-bar"><button class="btn primary" id="saveBusinessBtn">Save business details</button><button class="btn" id="applyBusinessBtn">Apply to current invoice</button><button class="btn small" data-new-invoice>New invoice →</button></div>
 <p class="help">Business details are saved on this device, not the cloud. Updating them never silently changes existing archived invoices.</p>
 </section></section>
 <section id="screen-preview" class="screen">
 <div class="generation-banner" id="generationBanner" role="status" aria-live="polite" hidden>
   <span class="generation-mark" aria-hidden="true">✓</span>
   <div class="generation-content">
-    <strong>Your Job Packet has been generated.</strong>
+    <strong>Your invoice is ready.</strong>
     <p id="generationCaption">Your completed document appears below. You can save a copy or share it with your customer.</p>
   </div>
   <div class="generation-actions">
@@ -175,9 +175,9 @@
   </div>
 </div>
 <div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Share payment request sends invoice details and a Cash App link as message text. Email invoice opens a draft; you still tap Send. Use Share report file when photos need to accompany the invoice. Payments must be confirmed and recorded manually.</p></section>
-<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-switch="build">+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
+<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-new-invoice>+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
 <section class="privacy-notice" id="privacySettings"><h3>Privacy &amp; device storage</h3><p id="storageStateText"></p><div class="action-bar"><button type="button" class="btn small" id="toggleDeviceSaveBtn">Change saving preference</button><button type="button" class="btn danger small" id="eraseDeviceBtn">Erase all local invoices and drafts</button><a class="btn small" href="privacy.html">Privacy details</a></div><p class="help">No analytics, advertising trackers, or nonessential cookies are used. Your archive is not a secure multi-device business database.</p></section><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Closeout Pocket · Pomegranate × Lily · v1.9 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<p class="copyright">Closeout Pocket · Pomegranate × Lily · v2.0 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="app.js" defer></script>
