@@ -3,6 +3,12 @@ const index=fs.readFileSync('index.html','utf8');
 const script=fs.readFileSync('app.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8'));
 assert(index.includes('Content-Security-Policy'));
+assert(index.includes('Packet Lily'));
+assert(index.includes('href="brand.css"'));
+assert(fs.readFileSync('brand.css','utf8').includes('.hero h1 em'));
+assert(manifest.name==='Packet Lily');
+assert(script.includes("['Closeout Pocket','Packet Lily']"),'legacy backup importer must remain compatible');
+assert(script.includes('closeout-pocket-draft-v1'),'legacy local drafts must remain accessible');
 assert(index.includes('src="app.js" defer'));
 assert(index.includes('id="sharePaymentBtn"'));
 assert(index.includes('id="confirmPaymentAmount"'));
@@ -38,4 +44,4 @@ assert(!element('#report').innerHTML.includes('r-payment-link'),'must hide stale
 app.generatePacket();assert.equal(app.getSaved().length,1,'must update existing invoice');
 assert.equal(app.getSaved()[0].paid,'5.00');
 assert(element('#report').innerHTML.includes('$15.00'));
-console.log('Closeout Pocket smoke tests passed.');
+console.log('Packet Lily smoke tests passed.');
