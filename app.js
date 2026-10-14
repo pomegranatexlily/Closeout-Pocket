@@ -1,9 +1,9 @@
 (()=>{
 'use strict';
-const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1',K_PREFS='closeout-pocket-privacy-v1';
+const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1',K_PREFS='closeout-pocket-privacy-v1',K_PAYMENT_ACCOUNT='closeout-pocket-payment-account-v1';
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const demo=()=>({company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
-const blank=()=>({company:'',phone:'',companyEmail:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
+const blank=()=>({company:'',phone:'',companyEmail:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:defaultCashAppLink,paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
 const fields=['company','phone','companyEmail','customer','customerEmail','job','address','city','stateCode','zip','date','ref','summary','work','total','paid','due','paymentLink','notes'];
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
 const safe=val=>String(val??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -44,6 +44,18 @@ const niceDate=v=>{if(!v)return '—';const dt=new Date(v+'T12:00:00');return Nu
 const retrieve=(k)=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
 const persist=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Browser storage is unavailable or full. Try a smaller photo or download your packet.');return false}};
 const clone=v=>JSON.parse(JSON.stringify(v));
+// Only a canonical $cashtag profile can be reused. Amount-specific Cash App Request links are invoice-specific.
+function canonicalCashProfile(input){
+ const raw=String(input||'').trim();
+ if(/^\$[a-z0-9_]{1,30}$/i.test(raw))return 'https://cash.app/'+raw;
+ try{
+  const url=new URL(raw);
+  const match=url.pathname.match(/^\/(\$[a-z0-9_]{1,30})\/?$/i);
+  if(url.protocol!=='https:'||!['cash.app','www.cash.app'].includes(url.hostname.toLowerCase())||url.username||url.password||url.search||url.hash||!match)return '';
+  return 'https://cash.app/'+match[1];
+ }catch(e){return ''}
+}
+let defaultCashAppLink=canonicalCashProfile(retrieve(K_PAYMENT_ACCOUNT)?.link);
 let state=normalize(retrieve(K_DRAFT)||blank());let saved=retrieve(K_SAVED);if(!Array.isArray(saved))saved=[];
 const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
@@ -98,6 +110,37 @@ function eraseDeviceData(){
  }catch(e){toast('Could not erase website storage in this browser.')}
 }
 function autosave(){if(deviceSaving)persist(K_DRAFT,state)}
+function renderCashAccountSettings(){
+ const field=$('#defaultCashApp'),status=$('#defaultCashStatus'),use=$('#useDefaultCashBtn'),remove=$('#removeDefaultCashBtn');
+ if(field&&document.activeElement!==field)field.value=defaultCashAppLink;
+ if(status)status.textContent=defaultCashAppLink?'Saved on this device. New invoices use this profile. Customers enter each amount manually.':'No default account saved. Enter your own $cashtag or Cash App profile URL.';
+ if(use)use.disabled=!defaultCashAppLink;
+ if(remove)remove.disabled=!defaultCashAppLink;
+}
+function saveCashAccount(){
+ const profile=canonicalCashProfile($('#defaultCashApp').value);
+ if(!profile){toast('Enter a valid $cashtag or Cash App profile URL, not an amount-specific request.');return}
+ if(!persist(K_PAYMENT_ACCOUNT,{link:profile,savedAt:new Date().toISOString()}))return;
+ defaultCashAppLink=profile;
+ renderCashAccountSettings();
+ toast('Cash App profile saved. New invoices will use it.');
+}
+function removeCashAccount(){
+ try{localStorage.removeItem(K_PAYMENT_ACCOUNT)}catch(e){toast('Unable to remove saved Cash App account.');return}
+ defaultCashAppLink='';
+ renderCashAccountSettings();
+ toast('Default Cash App profile removed. Existing invoices are unchanged.');
+}
+function useCashAccount(){
+ if(!defaultCashAppLink){toast('Save your Cash App account first.');return}
+ state.paymentLink=defaultCashAppLink;
+ state.paymentRequestConfirmed=false;
+ state.paymentRequestAmount='';
+ state.paymentRequestConfirmedLink='';
+ state.paymentLinkNeedsRefresh=false;
+ loadForm();autosave();
+ toast('Saved Cash App profile added to this invoice.');
+}
 function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=total-paid;$('#liveTotal').textContent=fmt(total);$('#livePaid').textContent=fmt(paid);$('#balanceLabel').textContent=bal>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(bal))}
 function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs').innerHTML=state.photos[kind].map((item,i)=>`<div class="thumb"><img src="${safe(item.data)}" alt="${kind} photo ${i+1}"><button type="button" data-remove-photo="${kind}:${i}" aria-label="Remove ${kind} photo ${i+1}">×</button></div>`).join('')}}
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
@@ -364,6 +407,9 @@ $('#eraseDeviceBtn').addEventListener('click',eraseDeviceData);
 $('#previewBtn').addEventListener('click',generatePacket);
 $('#sharePacketBtn').addEventListener('click',shareReport);
 $('#emailInvoiceBtn').addEventListener('click',emailInvoice);
+$('#saveDefaultCashBtn').addEventListener('click',saveCashAccount);
+$('#removeDefaultCashBtn').addEventListener('click',removeCashAccount);
+$('#useDefaultCashBtn').addEventListener('click',useCashAccount);
 $('#copyCashRequestBtn').addEventListener('click',async()=>{
  const amount=fmt(Math.max(0,num(state.total)-num(state.paid)));
  const note=(state.ref||'Invoice')+' · '+(state.job||'Service');
@@ -390,6 +436,6 @@ $('#copyBtn').addEventListener('click',copySummary);
 $('#saveBtn').addEventListener('click',()=>savePacket(false));
 $('#blankBtn').addEventListener('click',()=>{if(confirm('Start a new blank packet? Your current draft will be replaced. Saved packets will remain.'))startOver(blank())});
 $('#demoBtn').addEventListener('click',()=>startOver(demo()));
-loadForm();nav();renderStorageChoice();
+loadForm();nav();renderStorageChoice();renderCashAccountSettings();
 if('serviceWorker' in navigator && window.isSecureContext){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
 })();
