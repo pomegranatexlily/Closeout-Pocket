@@ -5,6 +5,26 @@
 ### Packet Lily design
 Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
+### Local document filing (v3.6)
+
+Under **Invoices → Save organized PDF folders**, choose a month and tap **Save month's folder (ZIP)**, or select **Save all months (ZIP)**. After closing a job, **Invoice desk → Overview → Save this month to Files** provides the same month-specific export. The bundle is prepared locally in the browser and shared through the native iPhone share sheet when it supports ZIP files; otherwise Packet Lily downloads it. In Files, locate the ZIP and tap it to extract its already-organized folders. Browsers cannot silently write folders to arbitrary directories on iPhone or guarantee that iOS will show Save to Files. Each export requires an explicit tap and user choice of destination.
+
+Archive example:
+
+```
+Packet-Lily-Records/
+  2026/
+    10-October/
+      Invoices/Invoice-PL-20261014-....pdf
+      Receipts/Receipt-PLR-....pdf
+      Tracking/invoices.csv
+      Tracking/payments.csv
+  Backup/invoices.json
+  README.txt
+```
+
+The monthly CSV ledgers are designed to open in Excel later: invoices track billed amounts and balances; payments track owner-entered amounts using actual payment dates and label legacy unverified entries. They are **not** tax calculations or verified income. The PDF invoice is a one-page financial/job summary and can truncate lengthy job descriptions; photographs and detailed source data are in the included JSON backup. Save that ZIP privately because it contains customer information and any attached photos. Use the regular JSON export as a second separate backup, especially before replacing a phone or clearing Safari data.
+
 ### Home screen and focused invoice form (v3.5)
 
 Packet Lily now opens on a dedicated **Home** screen. The "Job done. Money next." marketing banner lives only on Home, alongside a short real getting-started guide and links to New invoice, My Business and Invoice desk. **New invoice** begins directly with its quick-invoice form, without a marketing banner above it. A persistent Home shortcut in the header lets the operator go home while retaining the current invoice draft. The desktop sidebar includes Home; the iPhone's four bottom workflow tabs remain unchanged so the navigation stays compact.
