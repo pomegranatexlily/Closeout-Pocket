@@ -75,14 +75,18 @@
 .confirm-request{display:flex;align-items:flex-start;gap:9px;font-weight:650;font-size:12px;line-height:1.45;cursor:pointer;margin-top:6px;color:#24463d}
 .confirm-request input{flex:none;width:19px!important;height:19px!important;min-height:0!important;margin:0;accent-color:#137266}
 #paymentLinkStatus{font-size:11px;font-weight:650;display:block;margin-top:5px}
+.privacy-notice{border:1px solid #c9ddd7;border-radius:14px;padding:17px 20px;background:#f4fbf8;margin:16px 0;color:#1c4740}
+.privacy-notice[hidden]{display:none!important}.privacy-notice strong{font-size:15px}.privacy-notice h3{margin:0 0 8px;font-size:15px}
+.privacy-notice p{font-size:12px;line-height:1.6;margin:7px 0;color:#496a60}.privacy-notice .action-bar{margin-top:12px}
 </style>
 </head>
 <body>
 <div class="app">
-<aside class="sidebar" aria-label="Main navigation"><div class="brand"><span class="brand-mark"><b>✓</b></span><div><div class="brand-name">Closeout<br>Pocket.</div><div class="brand-sub">Pomegranate × Lily</div></div></div><div><div class="side-title">Workspace</div><nav class="nav" id="sideNav"></nav></div><div class="sidebar-bottom"><strong><span class="status-dot"></span>Local demo mode</strong><p>Browser-local archive. Email opens a mail draft; it does not send automatically. Export backups regularly.</p></div></aside>
-<main class="main"><header class="topbar"><div class="crumb">Workspace <span aria-hidden="true"> / </span> <strong id="crumb">Build packet</strong></div><div class="top-actions"><span class="tiny-pill">● &nbsp; Demo workspace</span><span class="avatar" title="Pomegranate × Lily">P</span></div></header>
+<aside class="sidebar" aria-label="Main navigation"><div class="brand"><span class="brand-mark"><b>✓</b></span><div><div class="brand-name">Closeout<br>Pocket.</div><div class="brand-sub">Pomegranate × Lily</div></div></div><div><div class="side-title">Workspace</div><nav class="nav" id="sideNav"></nav></div><div class="sidebar-bottom"><strong><span class="status-dot"></span>Local workspace</strong><p>Browser-local archive. Email opens a mail draft; it does not send automatically. Export backups regularly.</p></div></aside>
+<main class="main"><header class="topbar"><div class="crumb">Workspace <span aria-hidden="true"> / </span> <strong id="crumb">Build packet</strong></div><div class="top-actions"><span class="tiny-pill">● &nbsp; Private workspace</span><span class="avatar" title="Pomegranate × Lily">P</span></div></header>
 <section class="hero"><div><div class="overline">Built for work that speaks for itself</div><h1>Finish the job.<br>Show the proof.</h1><p>Turn job notes, before-and-after photos, and payment details into a professional customer-ready completion packet.</p></div><div class="hero-art" aria-hidden="true"><span></span><span></span><span></span><b>✓</b></div></section>
 <div id="screen-build" class="screen active">
+<section class="privacy-notice" id="deviceSaveNotice" hidden><strong>Your invoices stay on this device</strong><p>Choose whether Closeout Pocket can save drafts, photos, and invoices in this browser. No cookies or third-party tracking are used. Local storage is not an encrypted cloud backup.</p><div class="action-bar"><button class="btn primary small" type="button" id="enableDeviceSaveBtn">Enable local saving</button><button class="btn small" type="button" id="sessionOnlyBtn">Use without saving</button></div></section>
 <div class="section-title"><div><h2>Build a Job Packet</h2><p>Everything your customer needs to see, in one document.</p></div><span class="mini-tag">01 — 04</span></div>
 <div class="grid"><div class="stack">
 <section class="card"><div class="card-head"><span class="card-num">01</span><div><h3>Who did the work?</h3><p>Your business and your customer</p></div></div><div class="field-grid">
@@ -109,7 +113,7 @@
 <div class="field"><label for="paid">Amount paid ($)</label><input id="paid" data-field="paid" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div><div class="field span"><label for="due">Payment due date (optional)</label><input id="due" type="date" data-field="due"></div>
 <div class="field span"><label for="paymentLink">Cash App payment link</label><input id="paymentLink" data-field="paymentLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://cash.app/…"><small>For the exact amount: Cash App → Request → enter balance due → add invoice reference → Share link → paste here. A $cashtag link does not prefill the amount.</small><label class="confirm-request" for="confirmPaymentAmount"><input type="checkbox" id="confirmPaymentAmount"> I created this Cash App request for the exact amount due</label><small id="paymentLinkStatus" role="status" aria-live="polite"></small></div><div class="field span"><label for="notes">Final notes (optional)</label><textarea id="notes" rows="3" data-field="notes" placeholder="Warranty, instructions, next steps, or thank-you note"></textarea></div></div><p class="help" id="moneyHelp">Amounts format automatically in USD: $10,000.00. Enter dollars and cents without typing the $ or commas.</p>
 <div class="summary-strip"><div class="sum-row"><span>Job total</span><strong id="liveTotal">$0.00</strong></div><div class="sum-row"><span>Payments received</span><strong id="livePaid">$0.00</strong></div><div class="sum-row total"><span id="balanceLabel">Balance due</span><strong id="liveBalance">$0.00</strong></div></div></section>
-<section class="card"><h3>Ready to close it out?</h3><p class="help">Start with the example, or enter an actual job. Preview before you print or share.</p><div class="action-bar"><button class="btn primary" id="previewBtn">Generate &amp; view packet →</button><button class="btn" id="saveBtn">Save to archive</button><button class="btn" id="blankBtn">New blank</button><button class="btn small" id="demoBtn">Load example</button></div></section>
+<section class="card"><h3>Ready to close it out?</h3><p class="help">Start with the example, or enter an actual job. Preview before you print or share.</p><div class="action-bar"><button class="btn primary" id="previewBtn">Generate &amp; view packet →</button><button class="btn" id="saveBtn">Save to archive</button><button class="btn" id="blankBtn">New blank</button><button class="btn small" id="demoBtn">Load sample</button></div></section>
 </div></div></div>
 <section id="screen-preview" class="screen">
 <div class="generation-banner" id="generationBanner" role="status" aria-live="polite" hidden>
@@ -124,14 +128,15 @@
   </div>
 </div>
 <div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn small" id="downloadBtn">Save report file</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Generated packets are saved to your device archive when storage is available. “Share payment request” opens your device's share menu with the invoice details and a Cash App payment link—no attachment. You must choose a contact and tap Send. “Email invoice” opens an addressed email draft with invoice details and your Cash App link when provided. You must review and tap Send in your email app; it does not attach a file. For a photo report attachment, use “Share report file” and choose Mail. “Save report file” downloads a self-contained HTML report. Email is never sent automatically.</p></section>
-<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-switch="build">+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Closeout Pocket · Pomegranate × Lily · Prototype v1.5 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-switch="build">+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
+<section class="privacy-notice" id="privacySettings"><h3>Privacy &amp; device storage</h3><p id="storageStateText"></p><div class="action-bar"><button type="button" class="btn small" id="toggleDeviceSaveBtn">Change saving preference</button><button type="button" class="btn danger small" id="eraseDeviceBtn">Erase all local invoices and drafts</button><a class="btn small" href="privacy.html">Privacy details</a></div><p class="help">No analytics, advertising trackers, or nonessential cookies are used. Your archive is not a secure multi-device business database.</p></section><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
+<p class="copyright">Closeout Pocket · Pomegranate × Lily · v1.6 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 (()=>{
 'use strict';
-const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1';
+const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1',K_PREFS='closeout-pocket-privacy-v1';
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const demo=()=>({company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
 const blank=()=>({company:'',phone:'',companyEmail:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
@@ -175,7 +180,11 @@ const niceDate=v=>{if(!v)return '—';const dt=new Date(v+'T12:00:00');return Nu
 const retrieve=(k)=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
 const persist=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Browser storage is unavailable or full. Try a smaller photo or download your packet.');return false}};
 const clone=v=>JSON.parse(JSON.stringify(v));
-let state=normalize(retrieve(K_DRAFT)||demo());let saved=retrieve(K_SAVED);if(!Array.isArray(saved))saved=[];let tab='build',toastTimer;
+let state=normalize(retrieve(K_DRAFT)||blank());let saved=retrieve(K_SAVED);if(!Array.isArray(saved))saved=[];
+const storedPreferences=retrieve(K_PREFS);
+let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
+let privacyAcknowledged=storedPreferences?.acknowledged===true||storedPreferences===null&&deviceSaving;
+let tab='build',toastTimer;
 function normalize(v){
  const o={...blank(),...v};
  // Older drafts stored "street, city, ST" as one line: migrate when unambiguous.
@@ -193,9 +202,32 @@ function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('sh
 const icons={build:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h4"/></svg>',preview:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',saved:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h14v18l-7-4-7 4z"/></svg>'};
 const labels={build:'Build packet',preview:'Preview',saved:'Invoices'};
 function nav(){for(const target of ['#sideNav','#bottomNav']){const host=$(target);host.innerHTML=Object.keys(labels).map(k=>`<button type="button" data-switch="${k}" class="${tab===k?'active':''}" aria-current="${tab===k?'page':'false'}">${icons[k]}<span>${labels[k]}</span></button>`).join('')}}
-function switchTo(which){if(!labels[which])return;tab=which;$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview')renderReport();if(which==='saved')renderSaved();window.scrollTo({top:0,behavior:'instant'})}
+function switchTo(which){if(!labels[which])return;tab=which;$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview')renderReport();if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();window.scrollTo({top:0,behavior:'instant'})}
 function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport();renderPaymentStatus()}
-function autosave(){persist(K_DRAFT,state)}
+function renderStorageChoice(){
+ const notice=$('#deviceSaveNotice');
+ if(notice)notice.hidden=privacyAcknowledged;
+ const status=$('#storageStateText');
+ if(status)status.textContent=deviceSaving?'Local saving is ON. Invoices and photos stay in this browser until you delete them.':'Local saving is OFF. New invoices and drafts will not be archived on this device.';
+ const btn=$('#toggleDeviceSaveBtn');
+ if(btn)btn.textContent=deviceSaving?'Pause saving':'Enable saving';
+}
+function chooseDeviceSaving(enabled){
+ deviceSaving=Boolean(enabled);privacyAcknowledged=true;
+ persist(K_PREFS,{enabled:deviceSaving,acknowledged:true,changedAt:new Date().toISOString()});
+ if(deviceSaving)autosave();
+ renderStorageChoice();
+ toast(deviceSaving?'Local invoice saving enabled.':'Local saving paused. Existing records remain until erased.');
+}
+function eraseDeviceData(){
+ if(!confirm('Permanently delete all invoices, photos, and drafts saved in this browser? Download an archive backup first.'))return;
+ try{
+  localStorage.removeItem(K_DRAFT);localStorage.removeItem(K_SAVED);
+  state=blank();saved=[];loadForm();renderSaved();switchTo('build');
+  toast('All local invoices and drafts erased from this browser.');
+ }catch(e){toast('Could not erase website storage in this browser.')}
+}
+function autosave(){if(deviceSaving)persist(K_DRAFT,state)}
 function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=total-paid;$('#liveTotal').textContent=fmt(total);$('#livePaid').textContent=fmt(paid);$('#balanceLabel').textContent=bal>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(bal))}
 function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs').innerHTML=state.photos[kind].map((item,i)=>`<div class="thumb"><img src="${safe(item.data)}" alt="${kind} photo ${i+1}"><button type="button" data-remove-photo="${kind}:${i}" aria-label="Remove ${kind} photo ${i+1}">×</button></div>`).join('')}}
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
@@ -300,6 +332,7 @@ function snapshot(){
  return copy;
 }
 function savePacket(quiet=false){
+ if(!deviceSaving){if(!quiet)toast('Enable local saving to archive invoices.');return false}
  const item=snapshot(),old=saved.find(x=>x.id===item.id);
  if(old)item.savedAt=old.savedAt||item.savedAt;
  const next=[item,...saved.filter(x=>x.id!==item.id)];
@@ -449,6 +482,10 @@ document.addEventListener('blur',e=>{
 document.addEventListener('click',e=>{const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const rm=e.target.closest('[data-remove-photo]');if(rm){const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));toast('Archived invoice opened')}return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Invoice deleted from archive')}return}});
 $('#beforeFiles').addEventListener('change',e=>{photosFrom('before',e.target.files);e.target.value=''});
 $('#afterFiles').addEventListener('change',e=>{photosFrom('after',e.target.files);e.target.value=''});
+$('#enableDeviceSaveBtn').addEventListener('click',()=>chooseDeviceSaving(true));
+$('#sessionOnlyBtn').addEventListener('click',()=>chooseDeviceSaving(false));
+$('#toggleDeviceSaveBtn').addEventListener('click',()=>chooseDeviceSaving(!deviceSaving));
+$('#eraseDeviceBtn').addEventListener('click',eraseDeviceData);
 $('#previewBtn').addEventListener('click',generatePacket);
 $('#sharePacketBtn').addEventListener('click',shareReport);
 $('#emailInvoiceBtn').addEventListener('click',emailInvoice);
@@ -473,7 +510,7 @@ $('#downloadBtn').addEventListener('click',downloadHTML);
 $('#saveBtn').addEventListener('click',()=>savePacket(false));
 $('#blankBtn').addEventListener('click',()=>{if(confirm('Start a new blank packet? Your current draft will be replaced. Saved packets will remain.'))startOver(blank())});
 $('#demoBtn').addEventListener('click',()=>startOver(demo()));
-loadForm();nav();
+loadForm();nav();renderStorageChoice();
 })();
 </script>
 </body>
