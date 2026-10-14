@@ -2,7 +2,7 @@
 'use strict';
 const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1',K_PREFS='closeout-pocket-privacy-v1',K_PAYMENT_ACCOUNT='closeout-pocket-payment-account-v1',K_BUSINESS='closeout-pocket-business-v1';
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
-const demo=()=>({company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
+const demo=()=>({demoMode:true,company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
 const blank=()=>({workflowVersion:2,preparedAt:'',payments:[],closedAt:'',company:'',phone:'',companyEmail:'',businessAddress:'',businessCity:'',businessState:'',businessZip:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
 const fields=['company','phone','companyEmail','businessAddress','businessCity','businessState','businessZip','customer','customerEmail','job','address','city','stateCode','zip','date','ref','summary','work','total','paid','due','paymentLink','notes'];
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
@@ -224,7 +224,7 @@ function applyBusinessToInvoice(quiet=false){
  if(!quiet&&state.archiveId&&!confirm('Change the business and payment details on this saved invoice?'))return false;
  const previousLink=state.paymentLink;
  if(state.preparedAt&&state.company!==businessProfile.company){state.preparedAt='';$('#generationBanner').hidden=true}
- state.company=businessProfile.company;state.phone=businessProfile.phone;state.companyEmail=businessProfile.companyEmail;state.businessAddress=businessProfile.businessAddress;state.businessCity=businessProfile.businessCity;state.businessState=businessProfile.businessState;state.businessZip=businessProfile.businessZip;
+ state.demoMode=false;state.company=businessProfile.company;state.phone=businessProfile.phone;state.companyEmail=businessProfile.companyEmail;state.businessAddress=businessProfile.businessAddress;state.businessCity=businessProfile.businessCity;state.businessState=businessProfile.businessState;state.businessZip=businessProfile.businessZip;
  // Don't overwrite a request-specific link during silent business autofill.
  state.paymentLink=quiet&&previousLink&&!canonicalCashProfile(previousLink)?previousLink:businessProfile.paymentLink;
  if(previousLink!==state.paymentLink){state.paymentRequestConfirmed=false;state.paymentRequestAmount='';state.paymentRequestConfirmedLink='';state.paymentLinkNeedsRefresh=false}
@@ -255,6 +255,7 @@ function updateConnectivityUI(){
  badge.title=offline?'Device reports offline. Drafts and cached features may work; sending requests requires a connection.':'Invoices and records are stored locally when device saving is enabled.';
 }
 function renderRequiredSteps(){
+ const sample=$('#sampleInvoiceNotice');if(sample)sample.hidden=state.demoMode!==true;
  const checks=[['business',Boolean(state.company?.trim()),'Business profile'],['customer',Boolean(state.customer?.trim()),'Customer'],['amount',cents(state.total)>0,'Invoice amount']];
  let done=0;
  for(const [key,valid,label] of checks){
@@ -326,6 +327,7 @@ function paymentRequestText(){
  ].filter(Boolean).join('\n');
 }
 async function sharePaymentRequest(){
+ if(state.demoMode===true&&!confirm('This is a sample Northside Home Services invoice. Share this request anyway?'))return;
  if(paymentShareInProgress){toast('The share window is already opening.');return}
  if(!invoicePrepared()){guideToDraft('Generate an invoice before sharing its payment request.');return}
  const balance=num(state.total)-num(state.paid),link=payableLink();
@@ -783,6 +785,7 @@ async function importArchive(file){
  }catch(e){console.error('Cannot import archive',e);toast('Backup could not be imported.')}
 }
 function emailInvoice(){
+ if(state.demoMode===true&&!confirm('This invoice still uses sample Northside Home Services details. Do you want to open an email draft anyway?'))return;
  const recipient=String(state.customerEmail||'').trim();
  const field=$('#customerEmail');
  if(!recipient||!field.checkValidity()){
