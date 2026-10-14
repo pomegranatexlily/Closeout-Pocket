@@ -36,11 +36,11 @@ test('Save Report generates a real multipage PDF without HTML',async({page},test
   page.waitForEvent('download'),
   page.locator('#savePacketFileBtn').click()
  ]);
- expect(download.suggestedFilename()).toMatch(/\\.pdf$/i);
+ expect(download.suggestedFilename().toLowerCase().endsWith('.pdf')).toBe(true);
  const pdf=await readFile(await download.path());
  const content=pdf.toString('latin1');
  expect(content.startsWith('%PDF-1.4')).toBe(true);
- expect(content).toMatch(/\\/Type \\/Pages \\/Count [2-9]/);
+ expect(content.includes('/Type /Pages /Count 2')).toBe(true);
  expect(content).not.toContain('<!doctype html>');
 });
 
