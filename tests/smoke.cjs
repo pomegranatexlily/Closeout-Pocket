@@ -18,7 +18,7 @@ assert(!/document\.cookie\s*=|https?:\/\/(google-analytics|www\.googletagmanager
 new Function(script);new Function(filingScript);
 const seam='loadForm();nav();renderStorageChoice();';
 assert(script.includes(seam));
-const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,setDeskSection,makeReceiptPdf,receiptPdfFilename,receiptText,printCustomerInvoice,printReceipt,customerInvoicePdf,customerInvoicePdfName,offerPrintPdf};');
+const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,setDeskSection,makeReceiptPdf,receiptPdfFilename,receiptText,invoiceStage,receiptsUnlocked,renderSaved,printCustomerInvoice,printReceipt,customerInvoicePdf,customerInvoicePdfName,offerPrintPdf};');
 const events={},els=new Map();
 function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){},setAttribute(name,value){this[name]=value}});return els.get(key)}
 const screens=['home','build','preview','saved','business'].map(name=>({id:'screen-'+name,active:name==='home',classList:{toggle(flag,on){if(flag==='active')this.owner.active=on},owner:null}}));
@@ -47,18 +47,12 @@ assert(screens.find(v=>v.id==='screen-home').active===false,'Home hides when ano
 assert(screens.find(v=>v.id==='screen-business').active,'business screen must become active');
 assert(!screens.find(v=>v.id==='screen-build').active,'previous screen must be hidden');
 tapTab('preview');
-assert(screens.find(v=>v.id==='screen-preview').active,'preview must remain navigable');
-assert(!screens.find(v=>v.id==='screen-home').active,'Marketing hero must be outside the active invoice desk');
+assert(screens.find(v=>v.id==='screen-build').active,'unprepared invoice must be redirected to creation');
 app.setDeskSection('payments');
-assert(!element('#deskPayments').hidden,'payments subtab is visible');
-assert(element('#deskOverview').hidden,'overview is hidden on payments');
-app.setDeskSection('receipts');
-assert(!element('#deskReceipts').hidden,'receipts has its own screen');
-app.setDeskSection('overview');
-assert(!element('#deskOverview').hidden,'return to overview works');
-
-assert.equal(element('#paymentCenter').hidden,false,'contractor desk is default');
-assert.equal(element('#customerPreviewNotice').hidden,true,'customer-only notice is hidden on contractor desk');
+assert(screens.find(v=>v.id==='screen-build').active,'direct Payments bypass blocked for drafts');
+assert.equal(app.invoiceStage(),'draft');
+assert(!app.receiptsUnlocked());
+assert(!screens.find(v=>v.id==='screen-preview').active,'unprepared invoice desk stays locked');
 tapTab('saved');
 assert(screens.find(v=>v.id==='screen-saved').active,'invoice archive must remain navigable');
 tapTab('build');
@@ -77,6 +71,16 @@ assert.equal(app.paymentRequestState(),'manual');
 app.generatePacket();assert.equal(app.getSaved().length,0,'opt-in required to save');
 app.chooseDeviceSaving(true);app.generatePacket();
 assert.equal(app.getSaved().length,1);
+assert.equal(app.invoiceStage(),'unpaid');
+assert(!app.receiptsUnlocked(),'creating an invoice must not unlock receipts');
+assert(element('#receiptsViewBtn').disabled,'receipts tab must be disabled for unpaid invoices');
+assert(screens.find(v=>v.id==='screen-preview').active,'generated invoice can access desk');
+app.setDeskSection('payments');
+assert(!element('#deskPayments').hidden,'payment tab unlocked for generated invoice');
+app.setDeskSection('receipts');
+assert(element('#deskReceipts').hidden,'attempting receipts must not bypass lock');
+app.setDeskSection('overview');
+
 state.paymentLink='https://cash.app/pay/unique-request';
 state.paymentRequestConfirmed=true;state.paymentRequestAmount='250';state.paymentRequestConfirmedLink=state.paymentLink;state.paymentLinkNeedsRefresh=false;
 assert.equal(app.paymentRequestState(),'exact');
@@ -114,15 +118,15 @@ assert.equal(state.payments.length,1);
 assert.equal(state.payments[0].verifiedByOwner,true);
 assert.equal(app.paymentRequestState(),'stale','exact payment link must become stale after balance change');
 assert(!element('#report').innerHTML.includes('r-payment-link'),'hide stale amount-specific request');
-assert(!element('#receiptPanel').hidden,'receipt should become visible');
-assert(!element('#deskReceipts').hidden,'recording a payment should open its receipt subtab');
-assert.equal(element('#receiptEmpty').hidden,true,'receipt placeholder hides once available');
-assert(element('#receiptDocument').innerHTML.includes('$100.00'));
-assert(element('#receiptDocument').innerHTML.includes('did not independently verify'));
+assert(element('#receiptPanel').hidden,'receipt must stay hidden for partial payment');
+assert(element('#deskReceipts').hidden,'partial payment cannot open final receipt tab');
+assert.equal(element('#receiptEmpty').hidden,false,'locked receipt text remains visible as guidance');
+assert.equal(app.currentReceipt(),null,'no final receipt before closeout');
+assert(!app.receiptsUnlocked());
 state.payments[0].note='PRIVATE NOT FOR CUSTOMER';
 app.renderPaymentCenter();
-assert(!element('#receiptDocument').innerHTML.includes('PRIVATE NOT FOR CUSTOMER'),'internal payment note must never appear on receipt');
-assert(!app.receiptText(state.payments[0]).includes('PRIVATE NOT FOR CUSTOMER'),'shared receipt must exclude private note');
+assert(!element('#receiptDocument').innerHTML.includes('PRIVATE NOT FOR CUSTOMER'),'internal note must not appear in customer receipt');
+assert(!app.receiptText(state.payments[0]).includes('PRIVATE NOT FOR CUSTOMER'),'shared text must omit private note');
 
 assert(index.includes('Save / Print invoice PDF'),'invoice print button must explain PDF workflow');
 assert(index.includes('id="printReceiptBtn">Print PDF'),'receipt print button must explain PDF workflow');
@@ -143,6 +147,25 @@ app.printCustomerInvoice().then(result=>{
  assert.equal(desktopPrintCount,0,'iPhone must not call unsupported window.print');
  console.log('iPhone invoice PDF print fallback passed.');
 }).catch(e=>{console.error(e);process.exitCode=1});
+
+assert.equal(element('#invoicePaymentStatus').textContent,'Partially paid');
+enterPayment('150','TEST-PAID-2');
+assert.equal(state.paid,'250.00');
+assert.equal(state.payments.length,2);
+assert.equal(app.currentReceipt(),null,'payment fully recorded but receipt still locked until closeout');
+assert.equal(app.invoiceStage(),'ready-close');
+assert.equal(element('#invoicePaymentStatus').textContent,'Paid · Ready to close');
+app.closeInvoice();
+assert(state.closedAt,'explicit paid closeout recorded');
+assert.equal(element('#invoicePaymentStatus').textContent,'Closed · Paid in full');
+assert(app.getSaved()[0].closedAt,'closeout persisted');
+assert(app.receiptsUnlocked(),'owner-confirmed closeout unlocks receipt');
+assert.equal(app.currentReceipt().reference,'TEST-PAID-2','closed invoice offers latest receipt');
+assert(!element('#deskReceipts').hidden,'closeout automatically opens final receipts');
+assert(!element('#receiptPanel').hidden,'closed invoice receipt is visible');
+assert(element('#receiptDocument').innerHTML.includes('$150.00'),'final payment receipt shows recorded amount');
+const completedArchive=JSON.parse(JSON.stringify(app.getSaved()[0]));
+
 app.printReceipt().then(result=>{
  assert.equal(result,'shared','iPhone receipt print uses PDF share sheet');
  assert.equal(mobileShareCount>=2,true);
@@ -164,17 +187,11 @@ pdf.arrayBuffer().then(bytes=>{
  console.log('Genuine PDF receipt validation passed.');
 }).catch(e=>{console.error(e);process.exitCode=1});
 
-assert.equal(element('#invoicePaymentStatus').textContent,'Partially paid');
-enterPayment('150','TEST-PAID-2');
-assert.equal(state.paid,'250.00');
-assert.equal(state.payments.length,2);
-assert.equal(app.currentReceipt().reference,'TEST-PAID-2','most recent payment receipt selected');
-assert.equal(element('#invoicePaymentStatus').textContent,'Paid · Ready to close');
-app.closeInvoice();
-assert(state.closedAt,'explicit paid closeout recorded');
-assert.equal(element('#invoicePaymentStatus').textContent,'Closed · Paid in full');
-assert(app.getSaved()[0].closedAt,'closeout persisted');
+
 app.reopenInvoice();assert(!state.closedAt,'reopening clears closed status');
+assert.equal(app.currentReceipt(),null,'reopening locks prior final receipt');
+assert(element('#deskReceipts').hidden,'reopened invoice must leave receipts screen');
+assert(!app.receiptsUnlocked());
 const lastId=state.payments[1].id;
 app.voidPayment(lastId);
 assert(state.payments[1].voidedAt,'void must retain history');
@@ -193,7 +210,7 @@ assert(index.includes('id="saveMonthZipBtn"'),'month folder download must exist'
 assert(index.includes('id="saveAllZipBtn"'),'all-months archive action must exist');
 assert(index.includes('id="saveMonthDeskBtn"'),'on-the-job file export shortcut must exist');
 assert(win.PacketLilyArchive.availableMonths(app.getSaved()).length>0,'archive month picker must find saved invoices');
-win.PacketLilyArchive.buildPackage(app.getSaved(),'all',app.makeReceiptPdf).then(async output=>{
+win.PacketLilyArchive.buildPackage([completedArchive],'all',app.makeReceiptPdf).then(async output=>{
  assert.equal(output.blob.type,'application/zip','filing package is a real ZIP');
  assert(output.filename.endsWith('.zip'),'filing archive must use ZIP extension');
  const buf=Buffer.from(await output.blob.arrayBuffer());
