@@ -434,3 +434,11 @@ input,textarea,select{scroll-margin-top:75px;scroll-margin-bottom:calc(125px + e
 .sample-invoice-warning{background:#fff8e9;border:1px solid #efdab2;color:#6b481c;padding:12px 15px;border-radius:12px;font-size:12px;line-height:1.6;margin:12px 0}
 .sample-invoice-warning strong{color:#5a3a12}
 .sample-invoice-warning[hidden]{display:none!important}
+
+
+/* Avoid surprise iPhone auto-zoom when editing payment URLs and other fields. */
+@media(max-width:680px){
+ input:not([type="checkbox"]),select,textarea{font-size:max(16px,1rem);max-width:100%;min-width:0}
+ .payment-fields,.field,.field-grid{min-width:0}
+ #paymentLink{width:100%;overflow:hidden;text-overflow:clip}
+}
