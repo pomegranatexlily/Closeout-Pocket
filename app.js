@@ -513,7 +513,61 @@ async function shareReceipt(){
  }catch(e){console.error('Unable to share receipt PDF',e);toast('PDF sharing unavailable. Try Print / PDF.')}
 }
 
+function renderFilingOptions(){
+ const select=$('#filingMonth');if(!select||!window.PacketLilyArchive)return;
+ const months=window.PacketLilyArchive.availableMonths(saved),current=select.value;
+ const name=key=>{const [yr,mo]=key.split('-');return new Date(Number(yr),Number(mo)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'})};
+ select.innerHTML=months.length?months.map(k=>'<option value="'+safe(k)+'">'+safe(name(k))+'</option>').join(''):'<option value="">No invoices archived</option>';
+ select.value=months.includes(current)?current:months[0]||'';
+ $('#saveMonthZipBtn').disabled=!months.length;$('#saveAllZipBtn').disabled=!months.length;
+}
+let filingBusy=false;
+async function fileToDevice(scope){
+ if(filingBusy)return;
+ if(!window.PacketLilyArchive){toast('Filing tools have not loaded yet. Refresh the page.');return}
+ if(!saved.length){toast('Archive an invoice before filing it.');switchTo('saved');return}
+ const months=window.PacketLilyArchive.availableMonths(saved);
+ if(scope!=='all'&&!months.includes(scope)){toast('Select a month with saved invoices or payments.');return}
+ filingBusy=true;
+ const controls=['#saveMonthZipBtn','#saveAllZipBtn','#saveMonthDeskBtn'];
+ const status=$('#filingStatus');
+ for(const id of controls){const btn=$(id);if(btn)btn.disabled=true}
+ const feedback=msg=>{if(status)status.textContent=msg};
+ feedback('Preparing PDFs and monthly folders on this device…');
+ try{
+  const result=await window.PacketLilyArchive.buildPackage(saved,scope,makeReceiptPdf,(done,total)=>{
+   if(done===total||done%5===0)feedback('Organizing '+done+' of '+total+' archived invoices…');
+  });
+  if(result.blob.size>180*1024*1024)throw Error('This bundle is too large. Try one month at a time.');
+  feedback('Preparing '+result.files+' files across '+result.months.length+' month(s)…');
+  const output=typeof File==='function'?new File([result.blob],result.filename,{type:'application/zip'}):null;
+  let shared=false;
+  if(output&&navigator.share&&navigator.canShare&&navigator.canShare({files:[output]})){
+   try{await navigator.share({title:'Packet Lily monthly records',files:[output]});shared=true}
+   catch(error){if(error?.name==='AbortError'){feedback('Sharing cancelled. No files were changed.');return}}
+  }
+  if(!shared)downloadBlob(result.blob,result.filename);
+  feedback(shared?'ZIP shared. Choose Save to Files if offered, then extract it to reveal the folders.':'ZIP downloaded. Open it in iPhone Files to extract the year/month folders.');
+  toast(shared?'Monthly filing package ready to save.':'Monthly ZIP downloaded. Open it in Files.');
+ }catch(error){
+  console.error('Filing package failed',error);
+  feedback('Could not prepare this package. Try exporting one month, or use Export backup file.');
+  toast('Could not create the filing package.');
+ }finally{
+  filingBusy=false;for(const id of controls){const btn=$(id);if(btn)btn.disabled=false}
+  renderFilingOptions();
+ }
+}
+function saveCurrentMonthToFiles(){
+ if(!state.ref||!state.customer||cents(state.total)<=0){toast('Finish your invoice before filing it.');return}
+ if(!deviceSaving){toast('Enable local invoice saving, then save this invoice before exporting a month.');return}
+ const found=saved.some(p=>p.id===state.archiveId);
+ if(!found){toast('Save this invoice to the archive first.');return}
+ const month=/^\d{4}-\d{2}/.test(state.date)?state.date.slice(0,7):today().slice(0,7);
+ fileToDevice(month);
+}
 function renderSaved(){
+ renderFilingOptions();
  const wrap=$('#savedList');
  const term=($('#archiveSearch').value||'').trim().toLowerCase();
  const records=saved.map((p,i)=>({p,i})).filter(({p})=>[p.customer,p.customerEmail,p.job,p.ref,p.company].some(v=>String(v||'').toLowerCase().includes(term)));
@@ -741,6 +795,9 @@ $('#confirmPaymentAmount').addEventListener('change',e=>{
 });
 $('#sharePaymentBtn').addEventListener('click',sharePaymentRequest);
 $('#archiveSearch').addEventListener('input',renderSaved);
+$('#saveMonthZipBtn').addEventListener('click',()=>fileToDevice($('#filingMonth').value));
+$('#saveAllZipBtn').addEventListener('click',()=>fileToDevice('all'));
+$('#saveMonthDeskBtn').addEventListener('click',saveCurrentMonthToFiles);
 $('#exportArchiveBtn').addEventListener('click',exportArchive);
 $('#importArchiveFile').addEventListener('change',async e=>{await importArchive(e.target.files[0]);e.target.value=''});
 $('#savePacketFileBtn').addEventListener('click',downloadHTML);
