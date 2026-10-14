@@ -5,6 +5,10 @@
 ### Packet Lily design
 Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
+### Home screen and focused invoice form (v3.5)
+
+Packet Lily now opens on a dedicated **Home** screen. The "Job done. Money next." marketing banner lives only on Home, alongside a short real getting-started guide and links to New invoice, My Business and Invoice desk. **New invoice** begins directly with its quick-invoice form, without a marketing banner above it. A persistent Home shortcut in the header lets the operator go home while retaining the current invoice draft. The desktop sidebar includes Home; the iPhone's four bottom workflow tabs remain unchanged so the navigation stays compact.
+
 ### Compact invoice desk and customer copy (v3.4)
 
 The **Invoice desk** has four focused sections: **Overview** (invoice status and closeout), **Payments** (payment history and recording), **Receipts** (PDF customer receipts), and **Customer copy** (read-only invoice preview). The large marketing hero is hidden outside New invoice. The contractor desk no longer stacks all documents below the payment controls. Selecting a payment receipt automatically moves to Receipts. The Customer copy section disables the preview payment button so the contractor does not accidentally open their own Cash App session; it hides private controls.
