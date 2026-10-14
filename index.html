@@ -385,7 +385,7 @@ function generatePacket(){
     const archived=savePacket(true);
     switchTo('preview');
     const summary=state.ref||state.job||'this job';
-    $('#generationCaption').textContent='Packet for '+summary+' is ready below. '+(archived?'Automatically saved to your Invoice archive. ':'Archive storage unavailable. Download your report now. ')+'Tap Email invoice to open your mail draft; review and tap Send. To attach photos, use Share report file.';
+    $('#generationCaption').textContent='Packet for '+summary+' is ready below. '+(archived?'Automatically saved to your Invoice archive. ':'Archive storage unavailable. Download your report now. ')+'Tap Share payment request to message the amount and Cash App link (if added), or Email invoice to open a draft. To attach photos, use Share report file.';
     $('#generationBanner').hidden=false;
     $('#generationBanner').scrollIntoView({behavior:'auto',block:'start'});
   }catch(e){
