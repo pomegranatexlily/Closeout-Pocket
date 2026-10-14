@@ -1,5 +1,14 @@
 name: Check Packet Lily site
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'app.js'
+      - 'filing.js'
+      - 'brand.css'
+      - 'sw.js'
+      - '.github/workflows/site-health.yml'
   schedule:
     - cron: '15 */6 * * *'
   workflow_dispatch:
@@ -8,13 +17,28 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 7
     steps:
-      - name: Check public site and script
+      - uses: actions/checkout@v4
+      - name: Verify live GitHub Pages assets match main
         env:
           SITE_URL: https://pomegranatexlily.github.io/Closeout-Pocket/
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-delay 5 --max-time 30 --silent --show-error "$SITE_URL" -o /tmp/packet-lily-home.html
-          grep -q 'Packet Lily' /tmp/packet-lily-home.html
-          curl --fail --location --retry 3 --retry-delay 5 --max-time 30 --silent --show-error "${SITE_URL}app.js" -o /tmp/packet-lily-app.js
-          grep -q 'paymentRequestState' /tmp/packet-lily-app.js
+          # Pages publishing may still be running after the push; allow a short grace window.
+          for attempt in {1..18}; do
+            if curl --fail --location --retry 2 --retry-delay 2 --max-time 20 --silent --show-error "${SITE_URL}" -o /tmp/packet-lily-home.html \
+              && curl --fail --location --retry 2 --retry-delay 2 --max-time 20 --silent --show-error "${SITE_URL}app.js" -o /tmp/packet-lily-app.js \
+              && curl --fail --location --retry 2 --retry-delay 2 --max-time 20 --silent --show-error "${SITE_URL}sw.js" -o /tmp/packet-lily-sw.js \
+              && grep -q 'Packet Lily' /tmp/packet-lily-home.html \
+              && cmp -s index.html /tmp/packet-lily-home.html \
+              && cmp -s app.js /tmp/packet-lily-app.js \
+              && cmp -s sw.js /tmp/packet-lily-sw.js; then
+              echo "Live site, application script and offline cache match the checked-out main branch."
+              exit 0
+            fi
+            echo "Live Pages files are not all current yet (attempt ${attempt}/18)."
+            sleep 12
+          done
+          echo "::error::GitHub Pages did not serve the current index.html, app.js, and sw.js."
+          exit 1
