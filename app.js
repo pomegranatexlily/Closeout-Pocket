@@ -246,6 +246,136 @@ async function sharePaymentRequest(){
 }
 function reportMarkup(){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0,fullPacket=Boolean(state.job||state.work||state.summary||state.photos.before.length||state.photos.after.length);const businessLocation=[state.businessCity,state.businessState].filter(Boolean).join(', '),businessAddress=[state.businessAddress,[businessLocation,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}${businessAddress?'<br>'+safe(businessAddress):''}</div></div><div style="text-align:right"><div class="r-label">${fullPacket?"Completion report":"Customer invoice"}</div><div class="r-title">${fullPacket?"Job Packet":"Invoice"}</div><div class="r-badge">${fullPacket?"✓ WORK COMPLETED":balance>0.005?"BALANCE DUE":"✓ PAID"}</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">${fullPacket?'Job details':'Invoice details'}</div><div class="r-value">${dash(state.job||"Services")}</div><div class="r-light">${fullPacket?'Completed':'Issued'}: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}${fullPacket?`<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):"See job description."}</p></section>`:""}${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${balance>0.005&&payableLink()?`<section class="r-payment-link"><p class="pay-label">Pay through Cash App</p><a href="${safe(payableLink())}" target="_blank" rel="noopener noreferrer">${paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →'}</a><p class="pay-explain">${paymentRequestState()==='manual'?'This is a profile link: enter the amount yourself. ':''}Payment is handled by Cash App, not Packet Lily. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
 function renderReport(){$('#report').innerHTML=reportMarkup()}
+
+/* Owner-confirmed payments: no gateway, bank feed, or provider verification. */
+function activePayments(){return (state.payments||[]).filter(p=>!p.voidedAt)}
+function currentReceipt(){return activePayments().find(p=>p.id===receiptPaymentId&&p.source==='owner'&&p.verifiedByOwner===true)||null}
+function reconcilePaid(){
+ const before=cents(state.paid);
+ const after=activePayments().reduce((sum,p)=>sum+cents(p.amount),0);
+ state.paid=(after/100).toFixed(2);
+ if(before!==after&&state.paymentRequestConfirmed)state.paymentLinkNeedsRefresh=true;
+ return after;
+}
+function renderPaymentCenter(){
+ const total=cents(state.total),paid=cents(state.paid),balance=total-paid,closed=Boolean(state.closedAt);
+ const complete=total>0&&balance<=0&&paid>0;
+ const tag=$('#invoicePaymentStatus');
+ tag.dataset.status=closed?'closed':complete?'paid':paid>0?'partial':'due';
+ tag.textContent=closed?'Closed · Paid in full':complete?'Paid · Ready to close':paid>0?'Partially paid':'Awaiting payment';
+ $('#deskInvoiceTotal').textContent=fmt(total/100);
+ $('#deskPaidTotal').textContent=fmt(paid/100);
+ $('#deskBalanceTotal').textContent=fmt(Math.max(0,balance)/100);
+ const finish=$('#paymentFinish');
+ finish.hidden=!complete;
+ if(complete)finish.innerHTML=closed?
+  '<strong>✓ Job closed. Payment recorded in full.</strong><p>Closed '+safe(new Date(state.closedAt).toLocaleDateString('en-US'))+'. Payment entries were recorded by the business owner; Packet Lily did not verify funds. You can reopen the invoice if a correction is needed.</p>':
+  '<strong>✓ Paid in full — ready for closeout.</strong><p>Your recorded payments cover the invoice total. Review the records below, then select Complete &amp; close invoice.</p>';
+ const log=$('#paymentLog');
+ $('#paymentCount').textContent=(state.payments||[]).length+' record'+((state.payments||[]).length===1?'':'s');
+ log.innerHTML=!(state.payments||[]).length?
+  '<p class="help">No payments recorded yet. Confirm a deposit outside Packet Lily before recording it here.</p>':
+  state.payments.slice().reverse().map(p=>{
+   const invalid=Boolean(p.voidedAt),legacy=p.source==='legacy',canReceipt=!invalid&&!legacy&&p.verifiedByOwner;
+   const meta=[p.method,niceDate(p.date),p.reference?'Reference: '+p.reference:'',legacy?'Legacy entry · confirmation unavailable':'Recorded by business owner',p.note||'',invalid?'VOIDED · '+p.voidedAt.slice(0,10):''].filter(Boolean).map(safe).join(' · ');
+   return '<div class="payment-line'+(invalid?' is-voided':'')+'"><div><span class="payment-amount">'+fmt(cents(p.amount)/100)+(invalid?' · Voided':'')+'</span><div class="payment-meta">'+meta+'</div></div><div class="payment-line-actions">'+(canReceipt?'<button type="button" class="btn small" data-view-receipt="'+safe(p.id)+'">Receipt</button>':'')+(!invalid&&!closed?'<button type="button" class="btn danger small" data-void-payment="'+safe(p.id)+'">Void entry</button>':'')+'</div></div>';
+  }).join('');
+ const form=$('#recordPaymentForm');
+ form.hidden=closed||balance<=0||total<=0;
+ const amount=$('#payEntryAmount');
+ if(!form.hidden&&!amount.value)amount.value=showMoney((balance/100).toFixed(2),true);
+ if(!$('#payEntryDate').value)$('#payEntryDate').value=today();
+ $('#closeInvoiceBtn').hidden=closed||!complete;
+ $('#reopenInvoiceBtn').hidden=!closed;
+ const receipt=currentReceipt();
+ $('#receiptPanel').hidden=!receipt;
+ $('#receiptDocument').innerHTML=receipt?receiptMarkup(receipt):'';
+}
+function recordPayment(){
+ if(state.closedAt){toast('Reopen the invoice before making payment corrections.');return}
+ if(!state.company.trim()||!state.customer.trim()||cents(state.total)<=0){toast('Enter the business, customer, and invoice amount first.');return}
+ if((state.payments||[]).length>=200){toast('This invoice has reached its payment record limit.');return}
+ const raw=cleanMoney($('#payEntryAmount').value),amount=cents(raw),due=cents(state.total)-cents(state.paid);
+ if(amount<=0||amount>due){toast('Enter a positive payment no greater than the balance due ('+fmt(Math.max(0,due)/100)+').');$('#payEntryAmount').focus();return}
+ const date=$('#payEntryDate').value;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>today()||Number.isNaN(new Date(date+'T12:00:00').getTime())){toast('Select a valid payment date, not in the future.');return}
+ if(!$('#payOwnerConfirmed').checked){toast('Confirm you independently checked that the money arrived.');return}
+ const method=$('#payEntryMethod').value;
+ if(!paymentMethods.has(method)||method==='Previously recorded'){toast('Choose a valid payment method.');return}
+ const reference=$('#payEntryReference').value.trim().slice(0,120);
+ const note=$('#payEntryNote').value.trim().slice(0,400);
+ const payment={id:'PLR-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),amount:(amount/100).toFixed(2),date,method,reference,note,recordedAt:new Date().toISOString(),source:'owner',verifiedByOwner:true,voidedAt:''};
+ state.payments.push(payment);
+ reconcilePaid();
+ receiptPaymentId=payment.id;
+ $('#payEntryAmount').value='';
+ $('#payEntryReference').value='';
+ $('#payEntryNote').value='';
+ $('#payOwnerConfirmed').checked=false;
+ renderBalance();renderReport();renderPaymentStatus();renderPaymentCenter();
+ const archived=savePacket(true);
+ toast('Payment '+fmt(amount/100)+' recorded by you.'+(archived?' Invoice updated.':' Not archived; enable local saving or export your records.'));
+}
+function voidPayment(id){
+ if(state.closedAt){toast('Reopen the invoice before voiding a payment.');return}
+ const p=(state.payments||[]).find(x=>x.id===id&&!x.voidedAt);
+ if(!p||!confirm('Void the '+fmt(cents(p.amount)/100)+' payment entry? The entry remains in the history, but it no longer counts toward the balance.'))return;
+ p.voidedAt=new Date().toISOString();
+ if(receiptPaymentId===id)receiptPaymentId=activePayments().filter(x=>x.source==='owner').slice(-1)[0]?.id||'';
+ reconcilePaid();renderBalance();renderReport();renderPaymentStatus();renderPaymentCenter();
+ const archived=savePacket(true);
+ toast(archived?'Payment entry voided and invoice updated.':'Entry voided in session; save an updated backup.');
+}
+function closeInvoice(){
+ if(state.closedAt)return;
+ if(cents(state.total)<=0||cents(state.paid)<cents(state.total)||!activePayments().length){toast('Record the full payment before closing the invoice.');return}
+ if(!confirm('Confirm you checked the actual payments outside Packet Lily. Close this invoice as paid in full? Packet Lily does not verify deposits.'))return;
+ state.closedAt=new Date().toISOString();
+ renderReport();renderPaymentCenter();
+ const archived=savePacket(true);
+ toast(archived?'Invoice closed and saved.':'Invoice closed in this session only. Enable saving or export a backup.');
+}
+function reopenInvoice(){
+ if(!state.closedAt||!confirm('Reopen this completed invoice for corrections? Its closed status will be cleared.'))return;
+ state.closedAt='';
+ renderReport();renderPaymentCenter();
+ const archived=savePacket(true);
+ toast(archived?'Invoice reopened and archive updated.':'Invoice reopened in session; save a backup.');
+}
+function receiptMarkup(p){
+ const total=cents(state.total),paid=cents(state.paid),balance=total-paid;
+ const businessLoc=[state.businessCity,state.businessState].filter(Boolean).join(', ');
+ const businessAddress=[state.businessAddress,[businessLoc,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+ const details=[
+  ['Paid by',state.customer||'—'],
+  ['Invoice',state.ref||'—'],
+  ['Date received',niceDate(p.date)],
+  ['Payment method',p.method],
+  ['Receipt reference',p.id],
+  ['Provider reference',p.reference||'Not supplied'],
+  ['Recorded by',state.company||'Business owner'],
+  ['Invoice status',state.closedAt?'Closed · paid in full':balance<=0?'Paid in full · not closed':'Partially paid']
+ ].map(([label,value])=>'<div><span>'+safe(label)+'</span><strong>'+safe(value)+'</strong></div>').join('');
+ return '<div class="receipt-top"><div class="receipt-tag">PAYMENT RECEIPT · BUSINESS RECORD</div><div class="receipt-brand">Packet Lily<small>BY POMEGRANATE × LILY</small></div><h3>Payment recorded.</h3><p>Prepared by '+safe(state.company||'the business owner')+'. '+safe([state.phone,state.companyEmail,businessAddress].filter(Boolean).join(' · '))+'</p></div><div class="receipt-main"><div class="receipt-amount">'+fmt(cents(p.amount)/100)+'</div><div class="receipt-grid">'+details+'</div><div class="receipt-totals"><div><span>Invoice total</span><strong>'+fmt(total/100)+'</strong></div><div><span>Total recorded payments</span><strong>'+fmt(paid/100)+'</strong></div><div><span>Current balance due</span><strong>'+fmt(Math.max(0,balance)/100)+'</strong></div></div></div><div class="receipt-note">'+(p.note?'<strong>Note:</strong> '+safe(p.note)+'<br>':'')+'This receipt is a record entered and confirmed by the business owner. Packet Lily did not independently verify the transaction or the arrival of funds. Current invoice totals may change if later corrections are made.</div>';
+}
+function receiptText(p){
+ const paid=cents(state.paid),total=cents(state.total);
+ return ['PACKET LILY · PAYMENT RECEIPT','Recorded by: '+(state.company||'Business owner'),'Customer: '+(state.customer||'—'),'Invoice: '+(state.ref||'—'),'Payment recorded: '+fmt(cents(p.amount)/100),'Date received: '+niceDate(p.date),'Method: '+p.method,'Receipt reference: '+p.id,p.reference?'Transaction reference: '+p.reference:'','Total recorded payments: '+fmt(paid/100),'Current balance: '+fmt(Math.max(0,total-paid)/100),p.note?'Note: '+p.note:'','Owner-confirmed record only. Packet Lily did not independently verify the transaction.'].filter(Boolean).join('\n');
+}
+function downloadReceipt(){
+ const p=currentReceipt();if(!p){toast('Select an owner-confirmed payment to create a receipt.');return}
+ const css='*{box-sizing:border-box}body{margin:0;padding:20px;background:#f8f6fb;font:14px/1.5 system-ui,-apple-system,sans-serif;color:#2d1e3e}.receipt-sheet{max-width:740px;margin:auto;border-radius:16px;background:#fff;overflow:hidden;border:1px solid #e0d6ea}.receipt-top{background:#30203f;color:#fff;padding:28px 30px}.receipt-tag{letter-spacing:2px;color:#e3c0fe;font-size:10px}.receipt-brand{font-size:20px;font-weight:900;margin-top:10px}.receipt-brand small{display:block;font-size:9px;letter-spacing:1.5px;color:#f6c985}.receipt-top h3{font-size:29px;color:white;margin:12px 0}.receipt-top p{font-size:11px;color:#e2d4ed}.receipt-main{padding:26px 30px}.receipt-amount{font-size:39px;color:#2d1e3e;font-weight:900;margin-bottom:18px}.receipt-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px}.receipt-grid span{display:block;font-size:10px;color:#84728e;text-transform:uppercase}.receipt-grid strong{display:block;font-size:13px;overflow-wrap:anywhere}.receipt-totals{border-top:1px solid #e4d9e9;margin-top:22px;padding-top:13px}.receipt-totals div{display:flex;justify-content:space-between;margin-bottom:10px}.receipt-note{padding:15px 30px;font-size:11px;line-height:1.65;color:#665674;border-top:1px solid #eadfee}@media print{body{padding:0;background:white}.receipt-sheet{border:0;border-radius:0}@page{margin:.35in}}';
+ const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Packet Lily receipt '+safe(p.id)+'</title><style>'+css+'</style></head><body><article class="receipt-sheet">'+receiptMarkup(p)+'</article></body></html>';
+ downloadBlob(new Blob([html],{type:'text/html;charset=utf-8'}),'Packet-Lily-Receipt-'+p.id.replace(/[^a-z0-9-]/gi,'')+'.html');
+ toast('Receipt downloaded. Open and Print / Save as PDF for a PDF copy.');
+}
+async function shareReceipt(){
+ const p=currentReceipt();if(!p){toast('Select a recorded payment first.');return}
+ const content=receiptText(p);
+ if(navigator.share){try{await navigator.share({title:'Payment receipt '+(state.ref||''),text:content});return}catch(e){if(e?.name==='AbortError')return}}
+ try{await navigator.clipboard.writeText(content);toast('Receipt text copied for sharing.')}catch(e){toast('Could not share here. Download the receipt instead.')}
+}
+
 function renderSaved(){
  const wrap=$('#savedList');
  const term=($('#archiveSearch').value||'').trim().toLowerCase();
