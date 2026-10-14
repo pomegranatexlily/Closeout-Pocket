@@ -305,3 +305,44 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-vi
   #screen-preview:not(.customer-mode) > .report{display:block!important}
   body.print-receipt #screen-preview:not(.customer-mode) > .report{display:none!important}
 }
+
+
+/* Packet Lily v3.5 — the brand belongs on Home; utility views stay lean. */
+.crumb-home{border:0;background:none;color:#806f92;font-size:inherit;font-weight:750;padding:5px 2px;cursor:pointer}
+.crumb-home:hover{text-decoration:underline;color:#5a398b}
+.home-return{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;min-height:41px;border:1px solid #dfd4e9;background:#fff;color:#573883;border-radius:13px;padding:9px 13px;font-size:12px;font-weight:830}
+.home-return.active{background:#5d3993;border-color:#5d3993;color:#fff}
+.home-return svg{width:17px;height:17px;flex-shrink:0}
+#screen-home{max-width:1120px;margin:0 auto}
+#screen-home .hero{margin-bottom:21px}
+.home-quick-actions{display:flex;gap:11px;margin:0 0 28px;flex-wrap:wrap}
+.home-quick-actions>.btn{flex:1 1 225px;min-height:52px;font-size:14px}
+.home-quick-actions .btn.primary{font-weight:850}
+.home-intro{margin:0 0 15px}
+.home-intro h2{font-size:clamp(23px,3vw,29px);line-height:1.25;letter-spacing:-.9px;margin:0 0 6px;color:#261830}
+.home-intro p{font-size:13px;color:#766a81;line-height:1.65;margin:0}
+.home-guides{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.home-guide{display:flex;flex-direction:column;text-align:left;gap:10px;min-height:202px;border:1px solid #e5d8ed;border-radius:20px;background:#fff;padding:22px 19px;color:#2c1a3c;box-shadow:0 9px 27px #3218460d;transition:transform .16s,border-color .16s}
+.home-guide:hover{transform:translateY(-2px);border-color:#bd9add}
+.home-guide-num{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:#f0e7fb;color:#6c41a6;font-size:14px;font-weight:900}
+.home-guide strong{font-size:16px;letter-spacing:-.35px}
+.home-guide>span:not(.home-guide-num):not(.home-guide-link){font-size:12px;color:#776986;line-height:1.65}
+.home-guide-link{margin-top:auto;color:#6943a1;font-size:12px;font-weight:840}
+.home-storage-note{margin:18px 0 4px;font-size:11px;line-height:1.6;color:#887c92}
+#screen-build>.section-title{margin-top:5px}
+@media(max-width:800px){.home-guides{grid-template-columns:1fr}}
+@media(max-width:680px){
+ .home-return{padding:9px 10px;min-height:39px}
+ .home-return span{display:none}
+ .home-quick-actions{gap:9px;margin-bottom:26px}
+ .home-quick-actions>.btn{width:100%;flex-basis:100%;min-height:49px}
+ .home-guides{gap:10px}
+ .home-guide{min-height:0;padding:16px 17px;display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:13px;row-gap:3px}
+ .home-guide-num{grid-row:1/4}
+ .home-guide strong{grid-column:2;font-size:14px}
+ .home-guide>span:not(.home-guide-num):not(.home-guide-link){grid-column:2}
+ .home-guide-link{grid-column:2;margin-top:4px}
+ #screen-home .hero{margin-bottom:16px}
+ #screen-build>.section-title{margin-top:2px}
+}
+@media print{#screen-home,.home-return{display:none!important}}
