@@ -271,3 +271,37 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-vi
 @media print{
  .audience-switcher,.customer-preview-notice{display:none!important}
 }
+
+
+/* Packet Lily v3.4 — purposeful four-section Invoice desk. */
+.hero[hidden],.desk-pane[hidden],.receipt-empty[hidden]{display:none!important}
+#screen-preview .desk-section-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+#screen-preview .desk-section-nav button{font-size:12px;padding:13px 8px;min-height:49px}
+#screen-preview:not(.customer-mode) > .report,
+#screen-preview:not(.customer-mode) > .help{display:none}
+#screen-preview.desk-payments .preview-toolbar,
+#screen-preview.desk-receipts .preview-toolbar,
+#screen-preview.desk-payments .generation-banner,
+#screen-preview.desk-receipts .generation-banner{display:none!important}
+#screen-preview .payment-center{margin-top:8px}
+#screen-preview .payment-center h3{font-size:23px}
+.desk-pane-heading{border-bottom:1px solid #e8ddec;padding-bottom:19px;margin-bottom:20px}
+.desk-pane-heading h3{margin:0 0 9px;color:#2e193f;font-size:26px;letter-spacing:-1px}
+.desk-pane-heading p{font-size:12px;color:#776881;line-height:1.65;margin:0}
+.desk-pane .payment-close-actions{margin:19px 0 0}
+.overview-next{display:flex;flex-wrap:wrap;gap:10px;margin-top:19px}
+.overview-next .btn{flex:1 1 160px}
+.receipt-empty{font-size:12px;color:#7a6b88;border:1px dashed #d9c8e7;border-radius:15px;padding:25px 19px;text-align:center;line-height:1.65;background:#fcfaff}
+.desk-pane .receipt-panel{border-top:none;padding-top:0;margin-top:0}
+@media(max-width:680px){
+  #screen-preview .audience-switcher{padding:12px;margin-bottom:15px}
+  #screen-preview .desk-section-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+  #screen-preview .desk-section-nav button{font-size:12px;min-height:43px}
+  .audience-switcher-head span{font-size:9px}
+  .overview-next .btn{flex-basis:100%}
+  #screen-preview .payment-center{padding:17px 14px}
+}
+@media print{
+  #screen-preview:not(.customer-mode) > .report{display:block!important}
+  body.print-receipt #screen-preview:not(.customer-mode) > .report{display:none!important}
+}
