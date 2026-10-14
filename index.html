@@ -328,9 +328,10 @@ function generatePacket(){
   try{
     renderReport();
     if(!$('#report .report-body'))throw new Error('Report unavailable');
+    const archived=savePacket(true);
     switchTo('preview');
     const summary=state.ref||state.job||'this job';
-    $('#generationCaption').textContent='Packet for '+summary+' is ready below. Tap Share Job Packet or Save report file to get a copy. No new window is required.';
+    $('#generationCaption').textContent='Packet for '+summary+' is ready below. '+(archived?'Automatically saved to your Invoice archive. ':'Archive storage unavailable. Download your report now. ')+'Tap Email invoice to open your mail draft; review and tap Send. To attach photos, use Share report file.';
     $('#generationBanner').hidden=false;
     $('#generationBanner').scrollIntoView({behavior:'auto',block:'start'});
   }catch(e){
