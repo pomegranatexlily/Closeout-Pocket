@@ -1,6 +1,7 @@
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const index=fs.readFileSync('index.html','utf8');
 const script=fs.readFileSync('app.js','utf8');
+const filingScript=fs.readFileSync('filing.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8'));
 assert(index.includes('Content-Security-Policy'));
 assert(index.includes('Packet Lily'));
@@ -10,11 +11,11 @@ assert(manifest.name==='Packet Lily');
 assert(script.includes("['Closeout Pocket','Packet Lily']"),'old archives remain importable');
 assert(script.includes('closeout-pocket-draft-v1'),'old browser drafts remain available');
 for(const id of ['screen-home','ownerViewBtn','customerViewBtn','customerPreviewNotice','returnToDeskBtn','recordPaymentForm','closeInvoiceBtn','reopenInvoiceBtn','receiptDocument','paymentLog','sharePaymentBtn','confirmPaymentAmount'])assert(index.includes('id="'+id+'"'),id+' is missing');
-assert(index.includes('src="app.js" defer'));
+assert(index.includes('src="filing.js" defer'));assert(index.includes('src="app.js" defer'));assert(index.indexOf('src="filing.js"')<index.indexOf('src="app.js"'),'filing engine must load before app');
 assert(manifest.start_url==='/Closeout-Pocket/');
 assert(fs.readFileSync('apple-touch-icon.png').subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')));
 assert(!/document\.cookie\s*=|https?:\/\/(google-analytics|www\.googletagmanager)/.test(script));
-new Function(script);
+new Function(script);new Function(filingScript);
 const seam='loadForm();nav();renderStorageChoice();';
 assert(script.includes(seam));
 const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,setDeskSection,makeReceiptPdf,receiptPdfFilename,receiptText};');
@@ -31,6 +32,8 @@ const doc={querySelector:element,querySelectorAll:selector=>selector==='.screen'
 const data=new Map(),localStorage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
 const win={scrollTo(){},location:{href:''},isSecureContext:false,addEventListener(){},print(){}};
 const navigator={share:async()=>{},clipboard:{writeText:async()=>{}}};
+new Function('window','document','Blob','TextEncoder','atob',filingScript)(win,doc,Blob,TextEncoder,atob);
+assert(win.PacketLilyArchive,'filing module must expose local archive builder');
 const app=new Function('document','window','localStorage','navigator','URL','Blob','confirm','alert','console','setTimeout','clearTimeout','return '+source)(doc,win,localStorage,navigator,URL,Blob,()=>true,()=>{},console,()=>0,()=>{});
 // Test delegated tab navigation, not just isolated render methods.
 function tapTab(tab){events.click({target:{closest(selector){return selector==='[data-switch]'?{dataset:{switch:tab}}:null}}})}
@@ -158,6 +161,31 @@ assert.equal(old.payments[0].verifiedByOwner,false,'old payments cannot be deeme
 assert.equal(app.normalize(old).payments.length,1,'migration must be idempotent');
 console.log('Packet Lily payment ledger and closeout smoke tests passed.');
 assert(index.includes('Customer copy'));
+assert(index.includes('id="filingMonth"'),'month picker must exist in invoice archive');
+assert(index.includes('id="saveMonthZipBtn"'),'month folder download must exist');
+assert(index.includes('id="saveAllZipBtn"'),'all-months archive action must exist');
+assert(index.includes('id="saveMonthDeskBtn"'),'on-the-job file export shortcut must exist');
+assert(win.PacketLilyArchive.availableMonths(app.getSaved()).length>0,'archive month picker must find saved invoices');
+win.PacketLilyArchive.buildPackage(app.getSaved(),'all',app.makeReceiptPdf).then(async output=>{
+ assert.equal(output.blob.type,'application/zip','filing package is a real ZIP');
+ assert(output.filename.endsWith('.zip'),'filing archive must use ZIP extension');
+ const buf=Buffer.from(await output.blob.arrayBuffer());
+ assert.equal(buf.readUInt32LE(0),0x04034b50,'ZIP local header signature missing');
+ const end=buf.lastIndexOf(Buffer.from('504b0506','hex'));
+ assert(end>0&&buf.readUInt32LE(end)===0x06054b50,'ZIP end record missing');
+ const count=buf.readUInt16LE(end+10);
+ assert.equal(count,output.files,'ZIP central directory entry count must match');
+ const contents=buf.toString('latin1');
+ assert(contents.includes('Packet-Lily-Records/2026/10-October/Invoices/Invoice-'),'invoice PDFs are filed by year/month');
+ assert(contents.includes('/Receipts/Receipt-'),'payment receipts are filed separately');
+ assert(contents.includes('/Tracking/invoices.csv'),'monthly invoices CSV is included');
+ assert(contents.includes('/Tracking/payments.csv'),'monthly payments CSV is included');
+ assert(contents.includes('/Backup/invoices.json'),'backup is included');
+ assert(contents.includes('Owner-entered'),'payment ledger differentiates user-recorded income');
+ assert(contents.includes('PDF'),'ZIP has file manifest');
+ console.log('Monthly ZIP folder organization and Excel CSV smoke tests passed.');
+}).catch(e=>{console.error(e);process.exitCode=1});
+
 assert(index.includes('id="deskPayments"'));
 assert(index.includes('id="deskReceipts"'));
 console.log('Contractor/customer view separation, dedicated Home and compact invoice sections passed.');
