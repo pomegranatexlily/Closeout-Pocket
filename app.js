@@ -3,7 +3,7 @@
 const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1',K_PREFS='closeout-pocket-privacy-v1',K_PAYMENT_ACCOUNT='closeout-pocket-payment-account-v1',K_BUSINESS='closeout-pocket-business-v1';
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const demo=()=>({company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
-const blank=()=>({company:'',phone:'',companyEmail:'',businessAddress:'',businessCity:'',businessState:'',businessZip:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
+const blank=()=>({payments:[],closedAt:'',company:'',phone:'',companyEmail:'',businessAddress:'',businessCity:'',businessState:'',businessZip:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
 const fields=['company','phone','companyEmail','businessAddress','businessCity','businessState','businessZip','customer','customerEmail','job','address','city','stateCode','zip','date','ref','summary','work','total','paid','due','paymentLink','notes'];
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
 const safe=val=>String(val??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -40,6 +40,8 @@ function applyMoneyTyping(el){
   return clean;
 }
 
+const cents=v=>Math.round(num(v)*100);
+const paymentMethods=new Set(['Cash App','Cash','Bank transfer','Check','Card / other','Previously recorded']);
 const niceDate=v=>{if(!v)return '—';const dt=new Date(v+'T12:00:00');return Number.isNaN(dt.getTime())?safe(v):dt.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})};
 const retrieve=(k)=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
 const persist=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Browser storage is unavailable or full. Try a smaller photo or download your packet.');return false}};
@@ -64,7 +66,7 @@ let state=normalize(previousDraft||newInvoice());let saved=retrieve(K_SAVED);if(
 const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
 let privacyAcknowledged=storedPreferences?.acknowledged===true||storedPreferences===null&&deviceSaving;
-let tab='build',toastTimer;
+let tab='build',toastTimer,receiptPaymentId='';
 function normalize(v){
  const o={...blank(),...v};
  // Older drafts stored "street, city, ST" as one line: migrate when unambiguous.
@@ -80,6 +82,22 @@ function normalize(v){
   o[field]=String(o[field]??'').slice(0,limit);
  }
  o.total=cleanMoney(o.total);o.paid=cleanMoney(o.paid);o.paymentRequestAmount=cleanMoney(o.paymentRequestAmount);
+ const legacy=!Array.isArray(v?.payments)&&cents(o.paid)>0;
+ const sourcePayments=legacy?[{id:'legacy-1',amount:o.paid,date:o.date||today(),method:'Previously recorded',reference:'',note:'Carried forward from an earlier amount-paid field.',recordedAt:'',source:'legacy',verifiedByOwner:false,voidedAt:''}]:v?.payments;
+ o.payments=(Array.isArray(sourcePayments)?sourcePayments:[]).slice(0,200).filter(p=>p&&typeof p==='object'&&!Array.isArray(p)).map((p,i)=>({
+  id:String(p.id||'payment-'+i).slice(0,120),
+  amount:cleanMoney(p.amount),
+  date:/^\d{4}-\d{2}-\d{2}$/.test(String(p.date||''))?String(p.date):today(),
+  method:paymentMethods.has(p.method)?p.method:'Card / other',
+  reference:String(p.reference||'').slice(0,120),
+  note:String(p.note||'').slice(0,400),
+  recordedAt:String(p.recordedAt||'').slice(0,50),
+  source:p.source==='legacy'?'legacy':'owner',
+  verifiedByOwner:p.source!=='legacy'&&p.verifiedByOwner===true,
+  voidedAt:String(p.voidedAt||'').slice(0,50)
+ })).filter(p=>cents(p.amount)>0&&cents(p.amount)<=100000000000);
+ o.paid=(o.payments.reduce((sum,p)=>sum+(p.voidedAt?0:cents(p.amount)),0)/100).toFixed(2);
+ o.closedAt=typeof o.closedAt==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(o.closedAt)&&cents(o.paid)>=cents(o.total)&&cents(o.total)>0?o.closedAt.slice(0,50):'';
  return o;
 }
 function fullAddress(){const location=[state.city,state.stateCode].filter(Boolean).join(state.city&&state.stateCode?', ':' ');return [state.address,[location,state.zip].filter(Boolean).join(' ')].filter(Boolean).join('\n')}
@@ -89,8 +107,8 @@ const icons={build:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 icons.business='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V5l8-3 8 3v16M3 21h18M9 9h6M9 13h6M10 21v-4h4v4"/></svg>';
 const labels={build:'New invoice',preview:'Preview',saved:'Invoices',business:'My Business'};
 function nav(){for(const target of ['#sideNav','#bottomNav']){const host=$(target);host.innerHTML=Object.keys(labels).map(k=>`<button type="button" data-switch="${k}" class="${tab===k?'active':''}" aria-current="${tab===k?'page':'false'}">${icons[k]}<span>${labels[k]}</span></button>`).join('')}}
-function switchTo(which){if(!labels[which])return;tab=which;$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview')renderReport();if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
-function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport();renderPaymentStatus();const txt=$('#businessOnInvoice');if(txt)txt.textContent=state.company?'From '+state.company:'Set up your business details under My Business.'}
+function switchTo(which){if(!labels[which])return;tab=which;$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderReport();renderPaymentCenter()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
+function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport();renderPaymentStatus();renderPaymentCenter();const txt=$('#businessOnInvoice');if(txt)txt.textContent=state.company?'From '+state.company:'Set up your business details under My Business.'}
 function renderStorageChoice(){
  const notice=$('#deviceSaveNotice');
  if(notice)notice.hidden=privacyAcknowledged;
@@ -147,7 +165,7 @@ function clearBusinessSettings(){
  try{localStorage.removeItem(K_BUSINESS);localStorage.removeItem(K_PAYMENT_ACCOUNT)}catch(e){toast('Could not remove the business profile.');return}
  businessProfile=businessFrom({});defaultCashAppLink='';renderBusinessSettings();toast('Saved business profile cleared. Existing invoices are unchanged.');
 }
-function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=total-paid;$('#liveTotal').textContent=fmt(total);$('#livePaid').textContent=fmt(paid);$('#balanceLabel').textContent=bal>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(bal))}
+function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=total-paid;$('#liveTotal').textContent=fmt(total);$('#livePaid').textContent=fmt(paid);$('#balanceLabel').textContent=bal>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(bal));const prior=$('#paid');if(prior)prior.value=fmt(paid)}
 function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs').innerHTML=state.photos[kind].map((item,i)=>`<div class="thumb"><img src="${safe(item.data)}" alt="${kind} photo ${i+1}"><button type="button" data-remove-photo="${kind}:${i}" aria-label="Remove ${kind} photo ${i+1}">×</button></div>`).join('')}}
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
 function cashAppUrl(){
@@ -238,8 +256,8 @@ function renderSaved(){
  if(!records.length){wrap.innerHTML='<div class="empty"><strong>No matching invoices.</strong><p>Search by customer, job, or invoice number.</p></div>';return}
  wrap.innerHTML='<div class="saved-list">'+records.map(({p,i})=>{
   const balance=num(p.total)-num(p.paid);
-  const label=balance>0.005?'Outstanding '+fmt(balance):balance<-.005?'Credit '+fmt(-balance):'Paid in full';
-  return '<div class="saved-item"><div><h3>'+dash(p.ref||'No invoice #')+' · '+dash(p.job||'Invoice')+'</h3><p>'+dash(p.customer||'No customer')+' · '+dash(p.customerEmail||'No email')+' · '+niceDate(p.date)+'</p><p>Total '+fmt(num(p.total))+' · Paid '+fmt(num(p.paid))+'</p><span class="archive-pill">'+safe(label)+'</span></div><div class="actions"><button class="btn small" data-open="'+i+'">Open</button><button class="btn small danger" data-delete="'+i+'">Delete</button></div></div>';
+  const label=p.closedAt?'✓ Closed • paid in full':balance>0.005?'Outstanding '+fmt(balance):balance<-.005?'Credit '+fmt(-balance):'Paid in full • not closed';
+  return '<div class="saved-item"><div><h3>'+dash(p.ref||'No invoice #')+' · '+dash(p.job||'Invoice')+'</h3><p>'+dash(p.customer||'No customer')+' · '+dash(p.customerEmail||'No email')+' · '+niceDate(p.date)+'</p><p>Total '+fmt(num(p.total))+' · Paid '+fmt(num(p.paid))+'</p><span class="archive-pill">'+safe(label)+'</span></div><div class="actions"><button class="btn small" data-open="'+i+'">Open</button><button class="btn primary small" data-pay-open="'+i+'">Payments &amp; receipts</button><button class="btn small danger" data-delete="'+i+'">Delete</button></div></div>';
  }).join('')+'</div>';
 }
 async function shrink(file){return new Promise((resolve,reject)=>{const img=new Image();let blobUrl=URL.createObjectURL(file);img.onload=()=>{try{const m=1150,scale=Math.min(1,m/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);const data=canvas.toDataURL('image/jpeg',.76);URL.revokeObjectURL(blobUrl);resolve(data)}catch(e){URL.revokeObjectURL(blobUrl);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(blobUrl);reject(new Error('Image could not be read'))};img.src=blobUrl})}
@@ -378,6 +396,7 @@ function generatePacket(){
     const balance=Math.max(0,num(state.total)-num(state.paid));
  $('#generationCaption').textContent='Invoice '+summary+' is ready. '+(archived?'Saved in your device archive. ':'Device archive off; download a report to keep it. ')+(balance>0.005?'Balance due: '+fmt(balance)+'. Share a matching Cash App request or email the invoice.':'Payment received in full.');
     $('#generationBanner').hidden=false;
+     renderPaymentCenter();
     $('#generationBanner').scrollIntoView({behavior:'auto',block:'start'});
   }catch(e){
     console.error('Packet generation failed',e);
@@ -386,7 +405,7 @@ function generatePacket(){
   }
 }
 async function copySummary(){const total=num(state.total),paid=num(state.paid),balance=total-paid;const content=[`${state.company||'Service completion'} — Job Packet`,`Customer: ${state.customer||'—'}`,`Service address: ${fullAddress()||'—'}`,`Job: ${state.job||'—'}`,`Completed: ${niceDate(state.date)}`,`Work completed:\n${state.work||'—'}`,`Job total: ${fmt(total)}`,`Paid: ${fmt(paid)}`,`${balance<0?'Customer credit':'Balance due'}: ${fmt(Math.abs(balance))}`,state.notes?`Notes: ${state.notes}`:''].filter(Boolean).join('\n\n');try{await navigator.clipboard.writeText(content);toast('Summary copied to clipboard')}catch(e){const t=document.createElement('textarea');t.value=content;t.style.position='fixed';t.style.left='-9999px';document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('Summary copied to clipboard')}catch(e){toast('Copy unavailable in this browser')}t.remove()}}
-function startOver(next){state=next;$('#generationBanner').hidden=true;const extras=$('#invoiceExtras');if(extras)extras.open=false;loadForm();autosave();switchTo('build')}
+function startOver(next){state=next;$('#generationBanner').hidden=true;receiptPaymentId=(state.payments||[]).filter(p=>p.source==='owner'&&!p.voidedAt).slice(-1)[0]?.id||'';const extras=$('#invoiceExtras');if(extras)extras.open=false;loadForm();autosave();switchTo('build')}
 function beginNewInvoice(){if((state.customer||num(state.total)>0||state.job||state.work||state.photos.before.length||state.photos.after.length)&&!confirm('Start a new invoice? Changes that are not archived will be replaced.'))return;startOver(newInvoice())}
 function focusOptionalField(selector){const details=$('#invoiceExtras');if(details)details.open=true;const input=$(selector);if(input)input.focus();}
 function updateFieldFromInput(e){
@@ -394,10 +413,11 @@ function updateFieldFromInput(e){
  const field=el.dataset.field;
  const oldBalance=Math.round((num(state.total)-num(state.paid))*100);
  const oldLink=String(state.paymentLink||'');
- state[field]=(field==='total'||field==='paid')?applyMoneyTyping(el):el.value;
+ if(state.closedAt){el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??'';toast('Reopen this invoice before editing its details.');return}
+  state[field]=(field==='total'||field==='paid')?applyMoneyTyping(el):el.value;
  if((field==='total'||field==='paid')&&oldBalance!==Math.round((num(state.total)-num(state.paid))*100)&&state.paymentRequestConfirmed)state.paymentLinkNeedsRefresh=true;
  if(field==='paymentLink'&&oldLink!==state.paymentLink){state.paymentRequestConfirmed=false;state.paymentRequestAmount='';state.paymentRequestConfirmedLink='';state.paymentLinkNeedsRefresh=false}
- renderBalance();renderReport();renderPaymentStatus();autosave();
+ renderBalance();renderReport();renderPaymentStatus();if(tab==='preview')renderPaymentCenter();autosave();
 }
 document.addEventListener('input',updateFieldFromInput);
 document.addEventListener('change',updateFieldFromInput);
@@ -408,7 +428,14 @@ document.addEventListener('blur',e=>{
  }
 },true);
 
-document.addEventListener('click',e=>{const fresh=e.target.closest('[data-new-invoice]');if(fresh){beginNewInvoice();return}const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const rm=e.target.closest('[data-remove-photo]');if(rm){const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));toast('Archived invoice opened')}return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Invoice deleted from archive')}return}});
+document.addEventListener('click',e=>{const fresh=e.target.closest('[data-new-invoice]');if(fresh){beginNewInvoice();return}const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const rm=e.target.closest('[data-remove-photo]');if(rm){const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const payOpen=e.target.closest('[data-pay-open]');if(payOpen){const item=saved[Number(payOpen.dataset.payOpen)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));switchTo('preview');$('#paymentCenter').scrollIntoView({behavior:'smooth',block:'start'});}return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));toast('Archived invoice opened')}return}const voidBtn=e.target.closest('[data-void-payment]');if(voidBtn){voidPayment(voidBtn.dataset.voidPayment);return}const receiptBtn=e.target.closest('[data-view-receipt]');if(receiptBtn){receiptPaymentId=receiptBtn.dataset.viewReceipt;renderPaymentCenter();$('#receiptPanel').scrollIntoView({behavior:'smooth',block:'start'});return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Invoice deleted from archive')}return}});
+$('#recordPaymentForm').addEventListener('submit',e=>{e.preventDefault();recordPayment()});
+$('#closeInvoiceBtn').addEventListener('click',closeInvoice);
+$('#reopenInvoiceBtn').addEventListener('click',reopenInvoice);
+$('#downloadReceiptBtn').addEventListener('click',downloadReceipt);
+$('#printReceiptBtn').addEventListener('click',()=>{if(!currentReceipt())return;document.body.classList.add('print-receipt');window.print();setTimeout(()=>document.body.classList.remove('print-receipt'),2000)});
+if(typeof window.addEventListener==='function')window.addEventListener('afterprint',()=>document.body.classList.remove('print-receipt'));
+$('#shareReceiptBtn').addEventListener('click',shareReceipt);
 $('#beforeFiles').addEventListener('change',e=>{photosFrom('before',e.target.files);e.target.value=''});
 $('#afterFiles').addEventListener('change',e=>{photosFrom('after',e.target.files);e.target.value=''});
 $('#enableDeviceSaveBtn').addEventListener('click',()=>chooseDeviceSaving(true));
