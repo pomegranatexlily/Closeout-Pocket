@@ -407,7 +407,7 @@ function receiptText(p){
  return ['PACKET LILY · PAYMENT RECEIPT','Recorded by: '+(state.company||'Business owner'),'Customer: '+(state.customer||'—'),'Invoice: '+(state.ref||'—'),'Payment recorded: '+fmt(cents(p.amount)/100),'Date received: '+niceDate(p.date),'Method: '+p.method,'Receipt reference: '+p.id,p.reference?'Transaction reference: '+p.reference:'','Total recorded payments: '+fmt(paid/100),'Current balance: '+fmt(Math.max(0,total-paid)/100),'Owner-confirmed record only. Packet Lily did not independently verify the transaction.'].filter(Boolean).join('\n');
 }
 /* A real one-page PDF receipt made locally. No HTML attachment and no remote library. */
-function makeReceiptPdf(p){
+function makeReceiptPdf(p,record=state){
  if(!p||p.source!=='owner'||p.verifiedByOwner!==true||p.voidedAt)throw new Error('An owner-confirmed payment must be selected.');
  const canvas=document.createElement('canvas');
  canvas.width=1190;canvas.height=1684;
@@ -440,7 +440,7 @@ function makeReceiptPdf(p){
  write('PACKET LILY',43,28,24,'#fff6fc','bold');
  write('BY POMEGRANATE × LILY',43,62,10,'#f1c994','bold');
  write('PAYMENT RECEIPT',43,102,32,'#ffffff','bold');
- wrap('Prepared by '+(state.company||'Business owner')+' · '+[state.phone,state.companyEmail].filter(Boolean).join(' · '),43,157,490,2,11,'#e2d2e9');
+ wrap('Prepared by '+(record.company||'Business owner')+' · '+[record.phone,record.companyEmail].filter(Boolean).join(' · '),43,157,490,2,11,'#e2d2e9');
  write('PAYMENT RECORDED',43,232,10,'#7d6590','bold');
  write(fmt(cents(p.amount)/100),43,253,43,'#2a173d','bold');
  ctx.fillStyle='#e5daeb';ctx.fillRect(43,327,509,1);
@@ -448,22 +448,22 @@ function makeReceiptPdf(p){
    write(label.toUpperCase(),x,y,10,'#816f90','bold',width);
    wrap(value,x,y+23,width,2,13,'#30203f');
  };
- box('Paid by',state.customer||'—',43,349,225);
- box('Invoice',state.ref||'—',308,349,241);
+ box('Paid by',record.customer||'—',43,349,225);
+ box('Invoice',record.ref||'—',308,349,241);
  box('Date received',niceDate(p.date),43,419,225);
  box('Payment method',p.method,308,419,241);
  box('Receipt reference',p.id,43,489,225);
  box('Provider reference',p.reference||'Not supplied',308,489,241);
- box('Recorded by',state.company||'Business owner',43,559,225);
- const balance=cents(state.total)-cents(state.paid);
- box('Invoice status',state.closedAt?'Closed · paid in full':balance<=0?'Paid in full · not closed':'Partially paid',308,559,241);
+ box('Recorded by',record.company||'Business owner',43,559,225);
+ const balance=cents(record.total)-cents(record.paid);
+ box('Invoice status',record.closedAt?'Closed · paid in full':balance<=0?'Paid in full · not closed':'Partially paid',308,559,241);
  ctx.fillStyle='#f6f0fa';ctx.fillRect(43,634,509,94);
  const row=(label,value,y,bold=false)=>{
   write(label,60,y,12,'#655876',bold?'bold':'normal',312);
   write(value,422,y,13,'#2e1b40','bold',117);
  };
- row('Invoice total',fmt(cents(state.total)/100),651);
- row('Total recorded payments',fmt(cents(state.paid)/100),676);
+ row('Invoice total',fmt(cents(record.total)/100),651);
+ row('Total recorded payments',fmt(cents(record.paid)/100),676);
  row('Remaining balance',fmt(Math.max(0,balance)/100),702,true);
  ctx.fillStyle='#e4d9ec';ctx.fillRect(43,750,509,1);
  wrap('Business-owner-recorded receipt. Packet Lily has not independently verified the payment or the arrival of funds. Current invoice totals may change after corrections.',43,765,509,3,10,'#796b84');
