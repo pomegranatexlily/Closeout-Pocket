@@ -5,9 +5,9 @@
 ### Packet Lily design
 Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
-### Contractor workspace and customer copy (v3.3)
+### Compact invoice desk and customer copy (v3.4)
 
-The **Invoice desk** is a private operator workflow. The **Contractor desk** view (default) shows the manual payment ledger, owner-only controls, and a read-only invoice with **no clickable Cash App payment button**. The **Customer preview** is clearly labeled and disables the payment button so the contractor does not inadvertently open their own Cash App session. It also hides the owner payment desk.
+The **Invoice desk** has four focused sections: **Overview** (invoice status and closeout), **Payments** (payment history and recording), **Receipts** (PDF customer receipts), and **Customer copy** (read-only invoice preview). The large marketing hero is hidden outside New invoice. The contractor desk no longer stacks all documents below the payment controls. Selecting a payment receipt automatically moves to Receipts. The Customer copy section disables the preview payment button so the contractor does not accidentally open their own Cash App session; it hides private controls.
 
 **Share report file** and **Save report file** produce an independent customer-facing HTML invoice, with only the customer's invoice and a working Cash App link when one is configured. The HTML file does not contain the contractor payment desk, payment entries, invoice archive, or internal payment-entry notes. **Email invoice** opens a customer email draft with a payment link. **Print customer invoice / PDF** prints the customer-facing version even from the Contractor desk.
 
@@ -17,9 +17,9 @@ Receipt exports likewise exclude the operator's internal payment notes.
 
 ### Payment desk and completion (v3.1)
 
-Open **Preview → The Payment Desk** to record each payment only after confirming the funds through Cash App, your bank, or in person. Each entry records its amount, received date, method, optional reference and note, confirmation that the owner checked it, and a locally generated receipt reference. The running paid total and balance are calculated from active entries, so partial payments work without entering the full paid total manually.
+Open **Invoice desk → Payments** to record each payment only after confirming the funds through Cash App, your bank, or in person. Each entry records its amount, received date, method, optional reference and note, confirmation that the owner checked it, and a locally generated receipt reference. The running paid total and balance are calculated from active entries, so partial payments work without entering the full paid total manually.
 
-The **Receipt** button on each active owner-confirmed payment displays a branded customer receipt, with controls to download a self-contained HTML copy, print/save a PDF, or share the receipt text. The receipt states that it is business-owner-recorded and **not independently verified** by Packet Lily. A received payment is *never inferred* just because a Cash App link was opened or shared.
+The **Receipt** button on each active owner-confirmed payment shows a branded customer receipt. **Save PDF receipt** now creates an actual local one-page `.pdf` (`application/pdf`, not an HTML file), and **Share PDF** uses the native share sheet when supported. **Print** remains available. The receipt states that it is business-owner-recorded and **not independently verified** by Packet Lily. A received payment is *never inferred* just because a Cash App link was opened or shared.
 
 Once recorded receipts total at least the invoice amount, choose **Complete & close invoice**, explicitly confirming that you checked the funds outside Packet Lily. A closed invoice appears as such in the archive; you may **Reopen invoice for corrections** and void a mistaken payment. Voided entries stay visible in the local history but stop counting toward the balance. The app is not an immutable ledger or payment processor.
 
