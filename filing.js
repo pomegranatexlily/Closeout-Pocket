@@ -13,32 +13,38 @@ const csvCell=v=>'"'+String(v??'').replace(/"/g,'""').replace(/^[=+\-@\t\r]/,"'$
 const csv=rows=>'\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n';
 const fileReady=r=>Boolean(r&&r.company&&r.customer&&cents(r.total)>0&&(r.preparedAt||(r.workflowVersion!==2&&(r.id||r.archiveId))));
 const availableMonths=records=>[...new Set(records.filter(fileReady).flatMap(r=>[monthKey(r.date||r.savedAt),...(r.payments||[]).filter(p=>!p.voidedAt).map(p=>monthKey(p.date))]).filter(Boolean))].sort().reverse();
-const makePdfFromCanvas=canvas=>{
- const jpg64=canvas.toDataURL('image/jpeg',.83);
- if(!jpg64.startsWith('data:image/jpeg;base64,'))throw new Error('Invoice PDF image encoding failed.');
- const raw=atob(jpg64.split(',')[1]),jpg=new Uint8Array(raw.length);
- for(let i=0;i<raw.length;i++)jpg[i]=raw.charCodeAt(i);
- if(jpg[0]!==255||jpg[1]!==216)throw new Error('Invoice PDF needs a valid JPEG.');
+const makePdfFromCanvases=canvases=>{
+ if(!canvases.length||canvases.length>40)throw Error('PDF page count is out of range.');
  const chunks=[],offsets=[0];let length=0;
  const add=b=>{chunks.push(b);length+=b.length};
  const write=t=>add(bytes(t));
  const obj=(n,t)=>{offsets[n]=length;write(n+' 0 obj\n'+t+'\nendobj\n')};
  write('%PDF-1.4\n');
  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
- obj(2,'<< /Type /Pages /Count 1 /Kids [3 0 R] >>');
- obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>');
- offsets[4]=length;
- write('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+canvas.width+' /Height '+canvas.height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');
- add(jpg);write('\nendstream\nendobj\n');
- const commands='q\n595 0 0 842 0 0 cm\n/Im1 Do\nQ\n';
- obj(5,'<< /Length '+bytes(commands).length+' >>\nstream\n'+commands+'endstream');
- const xref=length;
- write('xref\n0 6\n0000000000 65535 f \n');
- for(let n=1;n<=5;n++)write(String(offsets[n]).padStart(10,'0')+' 00000 n \n');
- write('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
+ obj(2,'<< /Type /Pages /Count '+canvases.length+' /Kids ['+canvases.map((_,i)=>(3+i*3)+' 0 R').join(' ')+'] >>');
+ for(let i=0;i<canvases.length;i++){
+  const canvas=canvases[i],page=3+i*3,imgId=page+1,streamId=page+2,alias='Im'+(i+1);
+  const jpg64=canvas.toDataURL('image/jpeg',.82);
+  if(!jpg64.startsWith('data:image/jpeg;base64,'))throw new Error('PDF image encoding failed.');
+  const raw=atob(jpg64.split(',')[1]),jpg=new Uint8Array(raw.length);
+  for(let n=0;n<raw.length;n++)jpg[n]=raw.charCodeAt(n);
+  if(jpg[0]!==255||jpg[1]!==216)throw Error('Invalid JPEG for PDF');
+  obj(page,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /'+alias+' '+imgId+' 0 R >> >> /Contents '+streamId+' 0 R >>');
+  offsets[imgId]=length;
+  write(imgId+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+canvas.width+' /Height '+canvas.height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');
+  add(jpg);write('\nendstream\nendobj\n');
+  const commands='q\n595 0 0 842 0 0 cm\n/'+alias+' Do\nQ\n';
+  obj(streamId,'<< /Length '+bytes(commands).length+' >>\nstream\n'+commands+'endstream');
+ }
+ const last=2+canvases.length*3,xref=length;
+ write('xref\n0 '+(last+1)+'\n0000000000 65535 f \n');
+ for(let n=1;n<=last;n++)write(String(offsets[n]).padStart(10,'0')+' 00000 n \n');
+ write('trailer\n<< /Size '+(last+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
  return new Blob(chunks,{type:'application/pdf'});
 };
-function makeInvoicePdf(r){
+const makePdfFromCanvas=canvas=>makePdfFromCanvases([canvas]);
+
+function invoiceCanvas(r){
  const canvas=document.createElement('canvas');canvas.width=1190;canvas.height=1684;
  const ctx=canvas.getContext('2d');if(!ctx)throw Error('PDF drawing is unavailable.');
  ctx.scale(2,2);ctx.fillStyle='#fff';ctx.fillRect(0,0,595,842);
@@ -88,7 +94,95 @@ function makeInvoicePdf(r){
  line('Balance due',57,740,15,'#69409c','bold');
  line(money(due/100),430,738,19,'#69409c','bold',110);
  line('Payment details and amount should be confirmed with the sender.',43,799,10,'#83738e');
- return makePdfFromCanvas(canvas);
+ return canvas;
+}
+function makeInvoicePdf(r){return makePdfFromCanvas(invoiceCanvas(r))}
+async function makeReportPdf(r){
+ if(!fileReady(r))throw Error('Generate a valid invoice before sharing a PDF packet.');
+ const pages=[invoiceCanvas(r)];
+ const newPage=title=>{
+  if(pages.length>=40)throw Error('Packet too large for a mobile PDF. Remove some details or photos.');
+  const canvas=document.createElement('canvas');canvas.width=1190;canvas.height=1684;
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('PDF drawing is unavailable');
+  ctx.scale(2,2);ctx.fillStyle='#fff';ctx.fillRect(0,0,595,842);
+  ctx.fillStyle='#301c43';ctx.fillRect(0,0,595,88);
+  ctx.fillStyle='#fff';ctx.font='bold 19px system-ui,-apple-system,sans-serif';ctx.fillText('PACKET LILY',42,33);
+  ctx.fillStyle='#e7c7f3';ctx.font='12px system-ui,-apple-system,sans-serif';ctx.fillText(String(title).slice(0,70),42,61);
+  ctx.fillStyle='#ebe1f0';ctx.fillRect(42,790,511,1);
+  ctx.fillStyle='#796b84';ctx.font='10px system-ui,-apple-system,sans-serif';
+  ctx.fillText((r.ref||'Invoice').slice(0,72)+' · '+r.customer,42,806);
+  ctx.textAlign='right';ctx.fillText('Page '+(pages.length+1),553,806);ctx.textAlign='left';
+  pages.push(canvas);return ctx;
+ };
+ const sections=[['SERVICE / JOB DESCRIPTION',r.job],['JOB SUMMARY',r.summary],['WORK PERFORMED',r.work],['CUSTOMER NOTES',r.notes]];
+ const hasInfo=sections.some(([,value])=>String(value||'').trim());
+ let ctx=null,y=116;
+ const ensure=(need)=>{
+  if(!ctx||y+need>768){ctx=newPage('JOB DETAILS · CONTINUATION');y=116}
+ };
+ const wrap=(text,width=499)=>{
+  const lines=[];
+  for(const para of String(text).split(/\r?\n/)){
+   if(!para.trim()){lines.push('');continue}
+   let current='';
+   for(const word of para.split(/\s+/)){
+    const next=current?current+' '+word:word;
+    if(ctx.measureText(next).width>width&&current){lines.push(current);current=word}
+    else current=next;
+    if(ctx.measureText(current).width>width&&current.length>1){
+     let chunk='';
+     for(const char of current){
+      if(chunk&&ctx.measureText(chunk+char).width>width){lines.push(chunk);chunk=char}else chunk+=char;
+     }
+     current=chunk;
+    }
+   }
+   if(current)lines.push(current);
+  }
+  return lines;
+ };
+ if(hasInfo){
+  for(const [title,content] of sections){
+   if(!String(content||'').trim())continue;
+   ensure(65);
+   ctx.font='bold 12px system-ui,-apple-system,sans-serif';ctx.fillStyle='#693f95';ctx.fillText(title,43,y);y+=26;
+   ctx.font='12px system-ui,-apple-system,sans-serif';
+   const rows=wrap(content);
+   for(const row of rows){
+    ensure(19);
+    ctx.fillStyle='#3d3046';ctx.font='12px system-ui,-apple-system,sans-serif';
+    if(row)ctx.fillText(row,43,y);
+    y+=row?19:12;
+   }
+   y+=23;
+  }
+ }
+ const evidence=[...(r.photos?.before||[]).map((p,i)=>({p,label:'BEFORE · PHOTO '+(i+1)})),...(r.photos?.after||[]).map((p,i)=>({p,label:'AFTER · PHOTO '+(i+1)}))];
+ if(evidence.length){
+  const loadImage=src=>new Promise((resolve,reject)=>{
+   const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Image could not be decoded'));img.src=src;
+  });
+  let photoCtx=null;
+  for(let i=0;i<evidence.length;i++){
+   if(i%2===0)photoCtx=newPage('JOB PHOTO EVIDENCE');
+   const {p,label}=evidence[i],top=i%2===0?113:455;
+   photoCtx.font='bold 13px system-ui,-apple-system,sans-serif';photoCtx.fillStyle='#5a3884';photoCtx.fillText(label,43,top);
+   photoCtx.font='10px system-ui,-apple-system,sans-serif';photoCtx.fillStyle='#71657d';
+   photoCtx.fillText(String(p.name||'Job photograph').slice(0,78),43,top+17);
+   photoCtx.strokeStyle='#dfd1e8';photoCtx.strokeRect(43,top+32,508,283);
+   try{
+    const img=await loadImage(p.data);
+    const width=Math.max(1,img.naturalWidth||img.width),height=Math.max(1,img.naturalHeight||img.height);
+    const ratio=Math.min(500/width,273/height);
+    const w=width*ratio,h=height*ratio;
+    photoCtx.drawImage(img,297-w/2,top+37+(273-h)/2,w,h);
+   }catch(error){
+    photoCtx.fillStyle='#6b5c76';photoCtx.fillText('This photo could not be included. Refer to the original local backup.',55,top+171);
+   }
+  }
+ }
+ if(pages.length===1)return makePdfFromCanvas(pages[0]);
+ return makePdfFromCanvases(pages);
 }
 const CRC=(()=>{const tab=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=(c&1)?0xEDB88320^(c>>>1):c>>>1;tab[i]=c>>>0}return tab})();
 const crc32=data=>{let c=0xFFFFFFFF;for(const b of data)c=CRC[(c^b)&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0};
@@ -179,5 +273,5 @@ async function buildPackage(records,scope,receiptPdf,progress=()=>{}){
  const blob=await zip(files);
  return {blob,filename:'Packet-Lily-Records_'+(scope==='all'?'All-Months_'+new Date().toISOString().slice(0,10):scope)+'.zip',count:selected.length,files:files.length,months:folders};
 }
-window.PacketLilyArchive={availableMonths,makeInvoicePdf,buildPackage,zip};
+window.PacketLilyArchive={availableMonths,makeInvoicePdf,makeReportPdf,buildPackage,zip};
 })();
