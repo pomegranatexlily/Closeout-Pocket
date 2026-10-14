@@ -5,6 +5,16 @@
 ### Packet Lily design
 Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
+### Guided invoice workflow (v3.8)
+
+Packet Lily now gates actions **per invoice**, rather than making the operator navigate freely through unready document screens. The workflow is **Draft → Invoice ready → Awaiting / partially paid → Payment recorded in full → Owner-confirmed closeout**. The New invoice form shows a live required-fields checklist for business name, customer name and positive amount. The invoice desk cannot open until a valid invoice has been generated; older saved invoices are migrated carefully without changing their underlying invoice and payment data. The customer invoice can be shared while unpaid, as it must be for payment collection, but opening it does not prove it was sent or paid.
+
+The **Overview** is a status/next-action screen after invoice preparation, not the final paid receipt. **Payments** accepts manually confirmed amounts only after invoice preparation. **Receipts** is disabled for unpaid, partially paid, and even fully recorded but **not-yet-closed** jobs. Only explicitly closed invoices with at least one owner-confirmed active payment unlock final customer receipts. Closing requires a zero balance and explicit operator confirmation; Packet Lily does not verify deposits from Cash App or any bank. Reopening immediately locks final receipt actions again until the invoice is closed once more.
+
+**Invoices → Unpaid / Paid & closed / All** separates jobs requiring attention from completed jobs. A full balance recorded but not yet closed remains in Unpaid to prompt the required final step. Reopening an archived unpaid invoice restores customer-sharing actions. Only prepared invoices receive invoice PDF entries in monthly ZIP exports, and final receipt PDFs are included only for paid-and-closed invoices. Ledger CSVs continue to track owner-entered partial payments for bookkeeping.
+
+This is a guided front-end workflow, not an authentication or tamper-proof accounting system. Browser-local saved records are still editable by whoever has access to the device. Continue making private backups.
+
 ### iPhone print buttons (v3.7)
 
 Both **Save / Print invoice PDF** and **Print PDF** (receipt) now handle iPhones and other mobile browsers without relying on unsupported `window.print()` in embedded webviews. They generate a real PDF on the device, offer the native share sheet when supported, and otherwise download the PDF. From iPhone Files, select the PDF, tap **Share → Print** to use AirPrint; or save it for later. On desktop, the browser's ordinary Print dialog remains available. The invoice PDF is currently a **one-page summary** (may truncate long work descriptions and does not embed job photos). To preserve the complete job packet, use **Share report file** or **Save report file**, which retain the customer-facing HTML report and photos. No payment is confirmed by printing.
