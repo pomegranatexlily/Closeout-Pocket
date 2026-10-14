@@ -59,7 +59,7 @@ const previousDraft=retrieve(K_DRAFT),storedBusiness=retrieve(K_BUSINESS);
 function businessFrom(v){const p=v&&typeof v==='object'?v:{};return {company:String(p.company||'').slice(0,300),phone:String(p.phone||'').slice(0,300),companyEmail:String(p.companyEmail||'').slice(0,300),businessAddress:String(p.businessAddress||'').slice(0,300),businessCity:String(p.businessCity||'').slice(0,300),businessState:String(p.businessState||'').slice(0,30),businessZip:String(p.businessZip||'').slice(0,20),paymentLink:canonicalCashProfile(p.paymentLink)}}
 let businessProfile=businessFrom(storedBusiness||{company:previousDraft?.company,phone:previousDraft?.phone,companyEmail:previousDraft?.companyEmail,businessAddress:previousDraft?.businessAddress,businessCity:previousDraft?.businessCity,businessState:previousDraft?.businessState,businessZip:previousDraft?.businessZip,paymentLink:retrieve(K_PAYMENT_ACCOUNT)?.link||canonicalCashProfile(previousDraft?.paymentLink)});
 let defaultCashAppLink=businessProfile.paymentLink;
-function newInvoice(){return {...blank(),company:businessProfile.company,phone:businessProfile.phone,companyEmail:businessProfile.companyEmail,businessAddress:businessProfile.businessAddress,businessCity:businessProfile.businessCity,businessState:businessProfile.businessState,businessZip:businessProfile.businessZip,paymentLink:defaultCashAppLink,ref:'CP-'+today().replace(/-/g,'')+'-'+(globalThis.crypto?.randomUUID?.().slice(0,8).toUpperCase()||Math.random().toString(36).slice(2,10).toUpperCase())}}
+function newInvoice(){return {...blank(),company:businessProfile.company,phone:businessProfile.phone,companyEmail:businessProfile.companyEmail,businessAddress:businessProfile.businessAddress,businessCity:businessProfile.businessCity,businessState:businessProfile.businessState,businessZip:businessProfile.businessZip,paymentLink:defaultCashAppLink,ref:'PL-'+today().replace(/-/g,'')+'-'+(globalThis.crypto?.randomUUID?.().slice(0,8).toUpperCase()||Math.random().toString(36).slice(2,10).toUpperCase())}}
 let state=normalize(previousDraft||newInvoice());let saved=retrieve(K_SAVED);if(!Array.isArray(saved))saved=[];
 const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
@@ -194,7 +194,7 @@ function paymentRequestText(){
  const balance=num(state.total)-num(state.paid),link=payableLink(),type=paymentRequestState();
  if(balance<=0.005||!link)return '';
  return [
-  (state.company||'Closeout Pocket')+' · PAYMENT REQUEST',
+  (state.company||'Packet Lily')+' · PAYMENT REQUEST',
   'Invoice '+(state.ref||'—'),
   'For: '+(state.job||'Service'),
   'Amount due: '+fmt(balance),
@@ -226,7 +226,7 @@ async function sharePaymentRequest(){
   toast('Unable to share here. Open Safari and try again.');
  }
 }
-function reportMarkup(){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0,fullPacket=Boolean(state.job||state.work||state.summary||state.photos.before.length||state.photos.after.length);const businessLocation=[state.businessCity,state.businessState].filter(Boolean).join(', '),businessAddress=[state.businessAddress,[businessLocation,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}${businessAddress?'<br>'+safe(businessAddress):''}</div></div><div style="text-align:right"><div class="r-label">${fullPacket?"Completion report":"Customer invoice"}</div><div class="r-title">${fullPacket?"Job Packet":"Invoice"}</div><div class="r-badge">${fullPacket?"✓ WORK COMPLETED":balance>0.005?"BALANCE DUE":"✓ PAID"}</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">${fullPacket?'Job details':'Invoice details'}</div><div class="r-value">${dash(state.job||"Services")}</div><div class="r-light">${fullPacket?'Completed':'Issued'}: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}${fullPacket?`<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):"See job description."}</p></section>`:""}${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${balance>0.005&&payableLink()?`<section class="r-payment-link"><p class="pay-label">Pay through Cash App</p><a href="${safe(payableLink())}" target="_blank" rel="noopener noreferrer">${paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →'}</a><p class="pay-explain">${paymentRequestState()==='manual'?'This is a profile link: enter the amount yourself. ':''}Payment is handled by Cash App, not Closeout Pocket. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
+function reportMarkup(){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0,fullPacket=Boolean(state.job||state.work||state.summary||state.photos.before.length||state.photos.after.length);const businessLocation=[state.businessCity,state.businessState].filter(Boolean).join(', '),businessAddress=[state.businessAddress,[businessLocation,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}${businessAddress?'<br>'+safe(businessAddress):''}</div></div><div style="text-align:right"><div class="r-label">${fullPacket?"Completion report":"Customer invoice"}</div><div class="r-title">${fullPacket?"Job Packet":"Invoice"}</div><div class="r-badge">${fullPacket?"✓ WORK COMPLETED":balance>0.005?"BALANCE DUE":"✓ PAID"}</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">${fullPacket?'Job details':'Invoice details'}</div><div class="r-value">${dash(state.job||"Services")}</div><div class="r-light">${fullPacket?'Completed':'Issued'}: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}${fullPacket?`<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):"See job description."}</p></section>`:""}${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${balance>0.005&&payableLink()?`<section class="r-payment-link"><p class="pay-label">Pay through Cash App</p><a href="${safe(payableLink())}" target="_blank" rel="noopener noreferrer">${paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →'}</a><p class="pay-explain">${paymentRequestState()==='manual'?'This is a profile link: enter the amount yourself. ':''}Payment is handled by Cash App, not Packet Lily. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
 function renderReport(){$('#report').innerHTML=reportMarkup()}
 function renderSaved(){
  const wrap=$('#savedList');
@@ -270,8 +270,8 @@ function downloadBlob(blob,name){
 }
 function exportArchive(){
  if(!saved.length){toast('No invoices to export yet.');return}
- const body={app:'Closeout Pocket',version:1,exportedAt:new Date().toISOString(),invoices:saved};
- downloadBlob(new Blob([JSON.stringify(body,null,2)],{type:'application/json'}),'closeout-pocket-invoices-'+today()+'.json');
+ const body={app:'Packet Lily',version:1,exportedAt:new Date().toISOString(),invoices:saved};
+ downloadBlob(new Blob([JSON.stringify(body,null,2)],{type:'application/json'}),'packet-lily-invoices-'+today()+'.json');
  toast('Backup downloaded. Save it in your Files app.');
 }
 async function importArchive(file){
@@ -279,7 +279,7 @@ async function importArchive(file){
  if(file.size>25000000){toast('Backup file is too large.');return}
  try{
   const data=JSON.parse(await file.text());
-  if(data?.app!=='Closeout Pocket'||!Array.isArray(data.invoices)||data.invoices.length>1000)throw Error('Invalid backup format');
+  if(!['Closeout Pocket','Packet Lily'].includes(data?.app)||!Array.isArray(data.invoices)||data.invoices.length>1000)throw Error('Invalid backup format');
   const records=data.invoices;
   if(!records.every(p=>p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.id==='string'&&p.id.length<150&&typeof p.photos==='object'&&p.photos!==null))throw Error('Invalid invoice record');
   if(!confirm('Import '+records.length+' invoices? Matching IDs will be replaced.'))return;
@@ -299,7 +299,7 @@ function emailInvoice(){
  const status=paymentRequestState();
  if(status==='stale'||status==='unconfirmed'){toast('Update and confirm the Cash App request before emailing.');switchTo('build');focusOptionalField('#paymentLink');return}
  const bal=num(state.total)-num(state.paid);
- const subject='Invoice '+(state.ref||state.job||'Service')+' — '+(state.company||'Closeout Pocket');
+ const subject='Invoice '+(state.ref||state.job||'Service')+' — '+(state.company||'Packet Lily');
  const body=[
   'Hello '+(state.customer||'')+',','','Here are your invoice details:',
   'Invoice number: '+(state.ref||'—'),
@@ -330,7 +330,7 @@ function reportFile(){
 body{background:#f4f7f6;padding:26px 12px}.report{margin:0 auto}@media print{body{padding:0}}
 </style></head><body><article class="report">${content}</article>
 <footer style="max-width:830px;margin:14px auto;text-align:center;font:12px/1.6 system-ui;color:#697785">
-Customer copy · Prepared with Closeout Pocket. For PDF, use your browser’s Print / Save as PDF command.
+Customer copy · Prepared with Packet Lily. For PDF, use your browser’s Print / Save as PDF command.
 </footer></body></html>`;
   return {name:title+'.html',blob:new Blob([doc],{type:'text/html;charset=utf-8'})};
 }
