@@ -66,7 +66,7 @@ let state=normalize(previousDraft||newInvoice());let saved=retrieve(K_SAVED);if(
 const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
 let privacyAcknowledged=storedPreferences?.acknowledged===true||storedPreferences===null&&deviceSaving;
-let tab='build',toastTimer,receiptPaymentId='',viewMode='owner';
+let tab='build',toastTimer,receiptPaymentId='',viewMode='owner',deskSection='overview';
 function normalize(v){
  const o={...blank(),...v};
  // Older drafts stored "street, city, ST" as one line: migrate when unambiguous.
@@ -107,7 +107,7 @@ const icons={build:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 icons.business='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V5l8-3 8 3v16M3 21h18M9 9h6M9 13h6M10 21v-4h4v4"/></svg>';
 const labels={build:'New invoice',preview:'Invoice desk',saved:'Invoices',business:'My Business'};
 function nav(){for(const target of ['#sideNav','#bottomNav']){const host=$(target);host.innerHTML=Object.keys(labels).map(k=>`<button type="button" data-switch="${k}" class="${tab===k?'active':''}" aria-current="${tab===k?'page':'false'}">${icons[k]}<span>${labels[k]}</span></button>`).join('')}}
-function switchTo(which){if(!labels[which])return;tab=which;if(which==='preview')viewMode='owner';$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
+function switchTo(which){if(!labels[which])return;tab=which;if(which==='preview'){viewMode='owner';deskSection='overview'}$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
 function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport();renderPaymentStatus();renderPaymentCenter();const txt=$('#businessOnInvoice');if(txt)txt.textContent=state.company?'From '+state.company:'Set up your business details under My Business.'}
 function renderStorageChoice(){
  const notice=$('#deviceSaveNotice');
@@ -251,19 +251,34 @@ function renderAudienceMode(){
  const customer=viewMode==='customer';
  const host=$('#screen-preview');
  host.classList.toggle('customer-mode',customer);
- const center=$('#paymentCenter');center.hidden=customer;
+ host.classList.toggle('desk-overview',!customer&&deskSection==='overview');
+ host.classList.toggle('desk-payments',!customer&&deskSection==='payments');
+ host.classList.toggle('desk-receipts',!customer&&deskSection==='receipts');
+ $('#paymentCenter').hidden=customer;
  $('#customerPreviewNotice').hidden=!customer;
- $('#ownerViewBtn').classList.toggle('active',!customer);
- $('#customerViewBtn').classList.toggle('active',customer);
- $('#ownerViewBtn').setAttribute('aria-pressed',String(!customer));
- $('#customerViewBtn').setAttribute('aria-pressed',String(customer));
+ for(const [key,id] of [['overview','ownerViewBtn'],['payments','paymentsViewBtn'],['receipts','receiptsViewBtn'],['customer','customerViewBtn']]){
+  const active=customer?key==='customer':key===deskSection;
+  const el=$('#'+id);el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));
+ }
+ $('#deskOverview').hidden=customer||deskSection!=='overview';
+ $('#deskPayments').hidden=customer||deskSection!=='payments';
+ $('#deskReceipts').hidden=customer||deskSection!=='receipts';
  $('#audienceExplainer').textContent=customer
-  ?'Customer invoice appearance only. No contractor controls or active payment links are available in this preview.'
-  :'Private contractor workspace. Payment entry and closeout stay here; customers only receive documents you choose to send.';
+  ?'Read-only preview. Customers receive an independent invoice with their own payment link.'
+  :deskSection==='overview'?'Invoice status and next steps. Payment and receipt details live under their own tabs.'
+  :deskSection==='payments'?'Record received payments and review transaction history, separate from the customer copy.'
+  :'Generate, download, or share a customer receipt as a PDF. Internal notes stay private.';
+}
+function setDeskSection(section,scroll=false){
+ if(!['overview','payments','receipts'].includes(section))section='overview';
+ deskSection=section;viewMode='owner';
+ renderAudienceMode();renderReport();
+ if(scroll&&$('#'+(section==='receipts'?'deskReceipts':section==='payments'?'deskPayments':'deskOverview')).scrollIntoView)
+  $('#'+(section==='receipts'?'deskReceipts':section==='payments'?'deskPayments':'deskOverview')).scrollIntoView({behavior:'smooth',block:'start'});
 }
 function setAudienceMode(mode){
- viewMode=mode==='customer'?'customer':'owner';
- renderAudienceMode();renderReport();
+ if(mode==='customer'){viewMode='customer';renderAudienceMode();renderReport()}
+ else setDeskSection('overview');
 }
 
 /* Owner-confirmed payments: no gateway, bank feed, or provider verification. */
@@ -308,6 +323,7 @@ function renderPaymentCenter(){
  $('#reopenInvoiceBtn').hidden=!closed;
  const receipt=currentReceipt();
  $('#receiptPanel').hidden=!receipt;
+ $('#receiptEmpty').hidden=Boolean(receipt);
  $('#receiptDocument').innerHTML=receipt?receiptMarkup(receipt):'';
 }
 function recordPayment(){
@@ -333,6 +349,7 @@ function recordPayment(){
  $('#payOwnerConfirmed').checked=false;
  renderBalance();renderReport();renderPaymentStatus();renderPaymentCenter();
  const archived=savePacket(true);
+ setDeskSection('receipts',true);
  toast('Payment '+fmt(amount/100)+' recorded by you.'+(archived?' Invoice updated.':' Not archived; enable local saving or export your records.'));
 }
 function voidPayment(id){
@@ -584,7 +601,7 @@ document.addEventListener('blur',e=>{
  }
 },true);
 
-document.addEventListener('click',e=>{const fresh=e.target.closest('[data-new-invoice]');if(fresh){beginNewInvoice();return}const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const rm=e.target.closest('[data-remove-photo]');if(rm){if(state.closedAt){toast('Reopen this invoice before removing photos.');return}const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const payOpen=e.target.closest('[data-pay-open]');if(payOpen){const item=saved[Number(payOpen.dataset.payOpen)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));switchTo('preview');$('#paymentCenter').scrollIntoView({behavior:'smooth',block:'start'});}return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));toast('Archived invoice opened')}return}const voidBtn=e.target.closest('[data-void-payment]');if(voidBtn){voidPayment(voidBtn.dataset.voidPayment);return}const receiptBtn=e.target.closest('[data-view-receipt]');if(receiptBtn){receiptPaymentId=receiptBtn.dataset.viewReceipt;renderPaymentCenter();$('#receiptPanel').scrollIntoView({behavior:'smooth',block:'start'});return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Invoice deleted from archive')}return}});
+document.addEventListener('click',e=>{const fresh=e.target.closest('[data-new-invoice]');if(fresh){beginNewInvoice();return}const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const rm=e.target.closest('[data-remove-photo]');if(rm){if(state.closedAt){toast('Reopen this invoice before removing photos.');return}const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const payOpen=e.target.closest('[data-pay-open]');if(payOpen){const item=saved[Number(payOpen.dataset.payOpen)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));switchTo('preview');setDeskSection('payments',true);}return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));toast('Archived invoice opened')}return}const voidBtn=e.target.closest('[data-void-payment]');if(voidBtn){voidPayment(voidBtn.dataset.voidPayment);return}const receiptBtn=e.target.closest('[data-view-receipt]');if(receiptBtn){receiptPaymentId=receiptBtn.dataset.viewReceipt;renderPaymentCenter();setDeskSection('receipts',true);return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Invoice deleted from archive')}return}});
 $('#payEntryAmount').addEventListener('input',e=>applyMoneyTyping(e.target));
 $('#recordPaymentForm').addEventListener('submit',e=>{e.preventDefault();recordPayment()});
 $('#closeInvoiceBtn').addEventListener('click',closeInvoice);
@@ -627,7 +644,11 @@ $('#exportArchiveBtn').addEventListener('click',exportArchive);
 $('#importArchiveFile').addEventListener('change',async e=>{await importArchive(e.target.files[0]);e.target.value=''});
 $('#savePacketFileBtn').addEventListener('click',downloadHTML);
 $('#printBtn').addEventListener('click',printCustomerInvoice);
-$('#ownerViewBtn').addEventListener('click',()=>setAudienceMode('owner'));
+$('#ownerViewBtn').addEventListener('click',()=>setDeskSection('overview'));
+$('#paymentsViewBtn').addEventListener('click',()=>setDeskSection('payments'));
+$('#receiptsViewBtn').addEventListener('click',()=>setDeskSection('receipts'));
+$('#overviewPaymentsBtn').addEventListener('click',()=>setDeskSection('payments',true));
+$('#overviewReceiptsBtn').addEventListener('click',()=>setDeskSection('receipts',true));
 $('#customerViewBtn').addEventListener('click',()=>setAudienceMode('customer'));
 $('#returnToDeskBtn').addEventListener('click',()=>setAudienceMode('owner'));
 $('#copyBtn').addEventListener('click',copySummary);
