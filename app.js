@@ -67,6 +67,7 @@ const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
 let privacyAcknowledged=storedPreferences?.acknowledged===true||storedPreferences===null&&deviceSaving;
 let tab='home',toastTimer,receiptPaymentId='',viewMode='owner',deskSection='overview',archiveFilter='unpaid';
+let paymentWriteInProgress=false,lastPaymentTap={signature:'',at:0},paymentShareInProgress=false;
 function normalize(v){
  const o={...blank(),...v};
  // Older drafts stored "street, city, ST" as one line: migrate when unambiguous.
@@ -438,6 +439,18 @@ function recordPayment(){
  if(!paymentMethods.has(method)||method==='Previously recorded'){toast('Choose a valid payment method.');return}
  const reference=$('#payEntryReference').value.trim().slice(0,120);
  const note=$('#payEntryNote').value.trim().slice(0,400);
+ const signature=[state.ref,date,method,amount,reference.trim().toLowerCase()].join('|');
+ if(paymentWriteInProgress){toast('Payment is already being recorded.');return}
+ if(reference&&activePayments().some(p=>p.method===method&&p.reference?.trim().toLowerCase()===reference.toLowerCase())){
+  toast('That transaction reference is already recorded for this invoice. Check the payment history.');return
+ }
+ if(lastPaymentTap.signature===signature&&Date.now()-lastPaymentTap.at<3500){
+  toast('This payment was just recorded. Check payment history before adding another.');return
+ }
+ paymentWriteInProgress=true;
+ const recordButton=$('#recordPaymentBtn');
+ recordButton.disabled=true;
+ try{
  const payment={id:'PLR-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),amount:(amount/100).toFixed(2),date,method,reference,note,recordedAt:new Date().toISOString(),source:'owner',verifiedByOwner:true,voidedAt:''};
  state.payments.push(payment);
  reconcilePaid();
@@ -450,7 +463,12 @@ function recordPayment(){
  const archived=savePacket(true);
  renderInvoiceActions();
  if(invoiceStage()==='ready-close')setDeskSection('overview',true);else setDeskSection('payments');
+ lastPaymentTap={signature,at:Date.now()};
  toast('Payment '+fmt(amount/100)+' recorded by you.'+(archived?' Invoice updated.':' Not archived; enable local saving or export your records.'));
+ }finally{
+  paymentWriteInProgress=false;
+  recordButton.disabled=false;
+ }
 }
 function voidPayment(id){
  if(state.closedAt){toast('Reopen the invoice before voiding a payment.');return}
@@ -901,7 +919,7 @@ function generatePacket(){
   }
 }
 async function copySummary(){const total=num(state.total),paid=num(state.paid),balance=total-paid;const content=[`${state.company||'Service completion'} — Job Packet`,`Customer: ${state.customer||'—'}`,`Service address: ${fullAddress()||'—'}`,`Job: ${state.job||'—'}`,`Completed: ${niceDate(state.date)}`,`Work completed:\n${state.work||'—'}`,`Job total: ${fmt(total)}`,`Paid: ${fmt(paid)}`,`${balance<0?'Customer credit':'Balance due'}: ${fmt(Math.abs(balance))}`,state.notes?`Notes: ${state.notes}`:''].filter(Boolean).join('\n\n');try{await navigator.clipboard.writeText(content);toast('Summary copied to clipboard')}catch(e){const t=document.createElement('textarea');t.value=content;t.style.position='fixed';t.style.left='-9999px';document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('Summary copied to clipboard')}catch(e){toast('Copy unavailable in this browser')}t.remove()}}
-function startOver(next){state=normalize(next);$('#payEntryAmount').value='';$('#payEntryDate').value=today();$('#payEntryMethod').value='Cash App';$('#payEntryReference').value='';$('#payEntryNote').value='';$('#payOwnerConfirmed').checked=false;$('#generationBanner').hidden=true;receiptPaymentId=(state.payments||[]).filter(p=>p.source==='owner'&&!p.voidedAt).slice(-1)[0]?.id||'';const extras=$('#invoiceExtras');if(extras)extras.open=false;loadForm();autosave();switchTo('build')}
+function startOver(next){lastPaymentTap={signature:'',at:0};state=normalize(next);$('#payEntryAmount').value='';$('#payEntryDate').value=today();$('#payEntryMethod').value='Cash App';$('#payEntryReference').value='';$('#payEntryNote').value='';$('#payOwnerConfirmed').checked=false;$('#generationBanner').hidden=true;receiptPaymentId=(state.payments||[]).filter(p=>p.source==='owner'&&!p.voidedAt).slice(-1)[0]?.id||'';const extras=$('#invoiceExtras');if(extras)extras.open=false;loadForm();autosave();switchTo('build')}
 function beginNewInvoice(){if((state.customer||num(state.total)>0||state.job||state.work||state.photos.before.length||state.photos.after.length)&&!confirm('Start a new invoice? Changes that are not archived will be replaced.'))return;startOver(newInvoice())}
 function focusOptionalField(selector){const details=$('#invoiceExtras');if(details)details.open=true;const input=$(selector);if(input)input.focus();}
 function updateFieldFromInput(e){
