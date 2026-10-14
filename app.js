@@ -218,9 +218,11 @@ function renderBusinessSettings(){
 }
 function applyBusinessToInvoice(quiet=false){
  if(state.closedAt){toast('Reopen this invoice before editing its business information.');return false}
+ if(activePayments().length){toast('Void recorded payments before changing this invoice’s business.');return false}
  if(!businessProfile.company){toast('Save your business name first.');return false}
  if(!quiet&&state.archiveId&&!confirm('Change the business and payment details on this saved invoice?'))return false;
  const previousLink=state.paymentLink;
+ if(state.preparedAt&&state.company!==businessProfile.company){state.preparedAt='';$('#generationBanner').hidden=true}
  state.company=businessProfile.company;state.phone=businessProfile.phone;state.companyEmail=businessProfile.companyEmail;state.businessAddress=businessProfile.businessAddress;state.businessCity=businessProfile.businessCity;state.businessState=businessProfile.businessState;state.businessZip=businessProfile.businessZip;
  // Don't overwrite a request-specific link during silent business autofill.
  state.paymentLink=quiet&&previousLink&&!canonicalCashProfile(previousLink)?previousLink:businessProfile.paymentLink;
