@@ -133,7 +133,7 @@ function invoiceStage(){
 }
 function receiptsUnlocked(){return invoiceStage()==='closed'&&activePayments().some(p=>p.source==='owner'&&p.verifiedByOwner)}
 function guideToDraft(message){
- tab='build';$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-build'));
+ tab='build';Array.from(document.querySelectorAll('.screen')).forEach(el=>el.classList.toggle('active',el.id==='screen-build'));
  nav();$('#crumb').textContent=labels.build;window.scrollTo({top:0,behavior:'instant'});
  toast(message||'Complete the invoice details and tap Generate invoice to continue.');
 }
