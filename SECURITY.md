@@ -1,6 +1,6 @@
-# Closeout Pocket — Security and privacy status
+# Packet Lily — Security and privacy status
 
-Closeout Pocket is a **client-only field-test application**, not a protected production billing service.
+Packet Lily is a **client-only field-test application**, not a protected production billing service.
 
 ## Implemented controls
 - No bank-card capture, merchant API tokens, passwords, server-side customer database, advertising cookies or analytics.
