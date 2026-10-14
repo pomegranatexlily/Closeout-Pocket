@@ -20,11 +20,25 @@ assert(script.includes(seam));
 const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize};');
 const events={},els=new Map();
 function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){}});return els.get(key)}
-const doc={querySelector:element,querySelectorAll:()=>[],addEventListener:(event,handler)=>events[event]=handler,createElement:()=>({click(){},remove(){}}),body:{appendChild(){},classList:{add(){},remove(){}}}};
+const screens=['build','preview','saved','business'].map(name=>({id:'screen-'+name,active:name==='build',classList:{toggle(flag,on){if(flag==='active')this.owner.active=on},owner:null}}));
+for(const screen of screens)screen.classList.owner=screen;
+const doc={querySelector:element,querySelectorAll:selector=>selector==='.screen'?screens:[],addEventListener:(event,handler)=>events[event]=handler,createElement:()=>({click(){},remove(){}}),body:{appendChild(){},classList:{add(){},remove(){}}}};
 const data=new Map(),localStorage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
 const win={scrollTo(){},location:{href:''},isSecureContext:false,addEventListener(){},print(){}};
 const navigator={share:async()=>{},clipboard:{writeText:async()=>{}}};
 const app=new Function('document','window','localStorage','navigator','URL','Blob','confirm','alert','console','setTimeout','clearTimeout','return '+source)(doc,win,localStorage,navigator,URL,Blob,()=>true,()=>{},console,()=>0,()=>{});
+// Test delegated tab navigation, not just isolated render methods.
+function tapTab(tab){events.click({target:{closest(selector){return selector==='[data-switch]'?{dataset:{switch:tab}}:null}}})}
+tapTab('business');
+assert.equal(element('#crumb').textContent,'My Business','My Business must open when selected');
+assert(screens.find(v=>v.id==='screen-business').active,'business screen must become active');
+assert(!screens.find(v=>v.id==='screen-build').active,'previous screen must be hidden');
+tapTab('preview');
+assert(screens.find(v=>v.id==='screen-preview').active,'preview must remain navigable');
+tapTab('saved');
+assert(screens.find(v=>v.id==='screen-saved').active,'invoice archive must remain navigable');
+tapTab('build');
+assert(screens.find(v=>v.id==='screen-build').active,'quick invoice must remain navigable');
 assert.equal(app.getSaving(),false,'new visitor saving must be opt-in');
 const state=app.getState();
 Object.assign(state,{company:'Test Contractor',customer:'Test Customer',job:'Fixture installed',ref:'TEST-001',total:'250',paid:'0',date:'2026-10-13',paymentLink:'https://cash.app/$Example'});
