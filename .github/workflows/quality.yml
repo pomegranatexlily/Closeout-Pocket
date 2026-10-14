@@ -1,4 +1,4 @@
-name: Validate Closeout Pocket
+name: Validate Packet Lily
 on:
   push:
     branches: [main]
