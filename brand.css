@@ -346,3 +346,27 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-vi
  #screen-build>.section-title{margin-top:2px}
 }
 @media print{#screen-home,.home-return{display:none!important}}
+
+
+/* Packet Lily v3.6 — local, month-organized Files export. */
+.filing-panel{margin:16px 0 19px;border:1px solid #d9c8ea;background:linear-gradient(115deg,#fff,#fbf8ff);padding:23px;border-radius:19px;box-shadow:0 12px 33px #3417530b}
+.filing-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}
+.filing-heading h3{font-size:19px;color:#30203e;letter-spacing:-.45px;margin:1px 0 8px}
+.filing-heading p{font-size:12px;color:#746780;line-height:1.65;margin:0;max-width:570px}
+.filing-icon{display:grid;place-items:center;background:#f0e5fa;border:1px solid #dbc5ee;color:#764ab5;border-radius:14px;width:43px;height:43px;flex-shrink:0;font-size:25px;font-weight:850}
+.filing-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:20px}
+.filing-actions .field{flex:1 1 180px}
+.filing-actions .field label{display:block;color:#695477;font-weight:820;font-size:11px;margin:0 0 8px}
+.filing-actions .field select{width:100%;min-width:0;border:1px solid #d8c6e5;padding:11px 13px;min-height:47px;background:#fff;color:#39234d;font-size:14px;border-radius:12px}
+.filing-actions .btn{min-height:47px;font-size:12px}
+.filing-footnote{font-size:11px;color:#86768f;line-height:1.6;margin:16px 0 0}
+.filing-status{font-size:12px;font-weight:700;color:#69469b;line-height:1.6;margin:7px 0 0}
+.filing-status:empty{display:none}
+@media(max-width:680px){
+ .filing-panel{padding:18px 15px;border-radius:18px}
+ .filing-heading h3{font-size:18px}
+ .filing-actions{gap:9px}
+ .filing-actions .field{flex-basis:100%}
+ .filing-actions .btn{flex:1 1 100%;font-size:13px}
+}
+@media print{.filing-panel{display:none!important}}
