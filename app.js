@@ -375,4 +375,5 @@ $('#saveBtn').addEventListener('click',()=>savePacket(false));
 $('#blankBtn').addEventListener('click',()=>{if(confirm('Start a new blank packet? Your current draft will be replaced. Saved packets will remain.'))startOver(blank())});
 $('#demoBtn').addEventListener('click',()=>startOver(demo()));
 loadForm();nav();renderStorageChoice();
+if('serviceWorker' in navigator && window.isSecureContext){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
 })();
