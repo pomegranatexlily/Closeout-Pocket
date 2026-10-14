@@ -1,4 +1,4 @@
-name: Publish Closeout Pocket to GitHub Pages
+name: Publish Packet Lily to GitHub Pages
 on:
   push:
     branches: [main]
