@@ -446,3 +446,11 @@ input,textarea,select{scroll-margin-top:75px;scroll-margin-bottom:calc(125px + e
 /* Ledger totals are outputs: never visually suggest they can be typed over. */
 .payment-readout{display:block;box-sizing:border-box;width:100%;padding:13px 14px;border-radius:12px;background:#f5f0fa;border:1.2px solid #ddd2e8;color:#302041;font-size:16px;font-weight:800;min-height:48px;font-variant-numeric:tabular-nums}
 .payment-manage-btn{margin-top:10px;max-width:100%}
+
+/* v4.1: one contextual next step, prominent above optional invoice tools. */
+#workflowGuide #workflowNextBtn{min-height:51px;padding:13px 20px;font-size:14px;min-width:210px}
+#workflowGuide #workflowNextBtn:disabled,#homeNextActionBtn:disabled,#previewBtn:disabled{opacity:.55;cursor:wait}
+@media(max-width:680px){
+ #workflowGuide #workflowNextBtn{width:100%;min-width:0;min-height:54px;font-size:15px}
+ #homeNextActionBtn{min-height:51px}
+}

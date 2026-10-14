@@ -67,7 +67,7 @@ const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
 let privacyAcknowledged=storedPreferences?.acknowledged===true||storedPreferences===null&&deviceSaving;
 let tab='home',toastTimer,receiptPaymentId='',viewMode='owner',deskSection='overview',archiveFilter='unpaid';
-let paymentWriteInProgress=false,lastPaymentTap={signature:'',at:0},paymentShareInProgress=false;
+let paymentWriteInProgress=false,lastPaymentTap={signature:'',at:0},paymentShareInProgress=false,invoiceShareInProgress=false;
 function normalize(v){
  const o={...blank(),...v};
  // Older drafts stored "street, city, ST" as one line: migrate when unambiguous.
@@ -138,17 +138,68 @@ function guideToDraft(message){
  nav();$('#crumb').textContent=labels.build;window.scrollTo({top:0,behavior:'instant'});
  toast(message||'Complete the invoice details and tap Generate invoice to continue.');
 }
-function workflowNext(){
+// The main call to action follows the job, never the tab currently open.
+// Sharing is not proof of delivery or payment. A completed native share-sheet
+// merely changes the suggested next step for this same invoice revision.
+function invoiceShareSignature(){return JSON.stringify([state.ref,state.customer,state.total,state.job,state.work,state.paymentLink,state.due])}
+function hasSharedInvoice(){return Boolean(state.lastInvoiceShare?.signature===invoiceShareSignature())}
+function nextInvoiceAction(){
  const stage=invoiceStage();
- if(stage==='draft'){switchTo('build');toast('Enter the required details and tap Generate invoice.');return}
- if(stage==='closed'){setDeskSection('receipts',true);return}
- if(stage==='ready-close'){closeInvoice();return}
- setDeskSection(stage==='unpaid'?'overview':'payments',true);
+ if(stage==='draft')return {type:'generate',label:'Generate invoice →'};
+ if(stage==='closed')return receiptsUnlocked()?{type:'receipt',label:'View receipt →'}:{type:'review',label:'Review closed invoice →'};
+ if(stage==='ready-close')return {type:'close',label:'Close job & get receipt →'};
+ if(stage==='partial'||hasSharedInvoice())return {type:'payment',label:'Record payment →'};
+ return {type:'send',label:'Send invoice →'};
+}
+function renderNextInvoiceAction(){
+ const {type,label}=nextInvoiceAction();
+ for(const selector of ['#previewBtn','#workflowNextBtn','#homeNextActionBtn']){
+  const button=$(selector);
+  if(!button)continue;
+  button.textContent=selector==='#homeNextActionBtn'&&type==='generate'?'Open invoice →':label;
+  button.dataset.nextAction=type;
+  button.disabled=invoiceShareInProgress;
+ }
+}
+async function sendCustomerInvoice(){
+ if(!invoicePrepared()){guideToDraft();return}
+ if(state.demoMode===true&&!confirm('This invoice contains sample data. Open the customer share sheet anyway?'))return;
+ if(invoiceShareInProgress)return;
+ invoiceShareInProgress=true;renderNextInvoiceAction();
+ try{
+  const result=await offerPrintPdf(customerInvoicePdf(),customerInvoicePdfName(),'Packet Lily customer invoice');
+  if(result==='shared'){
+   state.lastInvoiceShare={signature:invoiceShareSignature(),at:new Date().toISOString()};
+   autosave();savePacket(true);
+   toast('Share sheet completed. Delivery and payment are not verified.');
+  }else if(result==='downloaded'){
+   toast('Invoice PDF saved. Share it with your customer before recording payment.');
+  }
+ }catch(error){
+  console.error('Could not open customer invoice share',error);
+  toast('Unable to prepare invoice PDF. Try Save / Print invoice PDF.');
+ }finally{
+  invoiceShareInProgress=false;renderNextInvoiceAction();renderWorkflowGuide();
+ }
+}
+function workflowNext(){
+ const {type}=nextInvoiceAction();
+ if(type==='generate'){if(tab==='home'){switchTo('build');return}generatePacket();return}
+ if(type==='send')return sendCustomerInvoice();
+ if(type==='close'){switchTo('preview');closeInvoice();return}
+ if(type==='receipt'){switchTo('preview');setDeskSection('receipts',true);return}
+ if(type==='review'){switchTo('preview');setDeskSection('overview',true);return}
+ if(type==='payment'){
+  if(tab!=='preview')switchTo('preview');
+  if(!setDeskSection('payments'))return;
+  const form=$('#recordPaymentForm');
+  if(form&&!form.hidden)form.scrollIntoView?.({behavior:'smooth',block:'start'});
+ }
 }
 function renderWorkflowGuide(){
  const stage=invoiceStage(),config={
   draft:['1 of 4','Complete the invoice','A business, customer, positive amount and generated invoice are required before payment tracking.','Generate invoice →',25],
-  unpaid:['2 of 4','Invoice ready — awaiting payment','Share the customer invoice, then record money only after it actually arrives.','Share customer invoice →',50],
+  unpaid:['2 of 4','Invoice ready — awaiting payment',hasSharedInvoice()?'Share sheet opened; delivery is not verified. Record only money actually received.':'Share the customer invoice, then record money only after it actually arrives.','Share customer invoice →',50],
   partial:['3 of 4','Partially paid','Record the remaining verified payment. Final receipt and closeout remain locked.','Record remaining payment →',75],
   'ready-close':['3 of 4','Payment recorded — close the job','Your ledger covers the balance. Review it, then confirm the final closeout.','Complete closeout →',75],
   closed:['4 of 4','Closed — receipt unlocked','This invoice was marked paid in full by the business owner. Final receipt is now available.','View final receipt →',100]
@@ -157,8 +208,8 @@ function renderWorkflowGuide(){
  $('#workflowTitle').textContent=config[1];
  $('#workflowHint').textContent=config[2];
  $('#workflowProgress').style.width=config[4]+'%';
- $('#workflowNextBtn').textContent=config[3];
- $('#workflowNextBtn').hidden=stage==='draft';
+ renderNextInvoiceAction();
+ $('#workflowNextBtn').hidden=false;
  $('#receiptsViewBtn').disabled=!receiptsUnlocked();
  $('#receiptsViewBtn').setAttribute('aria-disabled',String(!receiptsUnlocked()));
  $('#receiptsViewBtn').textContent=receiptsUnlocked()?'Receipts':'Receipts · Locked';
@@ -268,7 +319,7 @@ function renderRequiredSteps(){
 }
 // One integer-cent source of truth for invoice balances, from active ledger records.
 function invoiceAmounts(){const total=cents(state.total),paid=activePayments().reduce((sum,p)=>sum+cents(p.amount),0);return {total,paid,balance:total-paid,due:Math.max(0,total-paid)}}
-function renderBalance(){const {total,paid,balance}=invoiceAmounts();$('#liveTotal').textContent=fmt(total/100);$('#livePaid').textContent=fmt(paid/100);$('#balanceLabel').textContent=balance>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(balance)/100);renderRequiredSteps();const prior=$('#paid');if(prior){prior.value=fmt(paid/100);prior.textContent=fmt(paid/100)}}
+function renderBalance(){const {total,paid,balance}=invoiceAmounts();$('#liveTotal').textContent=fmt(total/100);$('#livePaid').textContent=fmt(paid/100);$('#balanceLabel').textContent=balance>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(balance)/100);renderRequiredSteps();const prior=$('#paid');if(prior){prior.value=fmt(paid/100);prior.textContent=fmt(paid/100)}renderNextInvoiceAction()}
 function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs').innerHTML=state.photos[kind].map((item,i)=>`<div class="thumb"><img src="${safe(item.data)}" alt="${kind} photo ${i+1}"><button type="button" data-remove-photo="${kind}:${i}" aria-label="Remove ${kind} photo ${i+1}">×</button></div>`).join('')}}
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
 function cashAppUrl(){
@@ -974,7 +1025,8 @@ $('#enableDeviceSaveBtn').addEventListener('click',()=>chooseDeviceSaving(true))
 $('#sessionOnlyBtn').addEventListener('click',()=>chooseDeviceSaving(false));
 $('#toggleDeviceSaveBtn').addEventListener('click',()=>chooseDeviceSaving(!deviceSaving));
 $('#eraseDeviceBtn').addEventListener('click',eraseDeviceData);
-$('#previewBtn').addEventListener('click',generatePacket);
+$('#previewBtn').addEventListener('click',workflowNext);
+$('#homeNextActionBtn').addEventListener('click',workflowNext);
 $('#sharePacketBtn').addEventListener('click',shareReport);
 $('#emailInvoiceBtn').addEventListener('click',emailInvoice);
 $('#saveBusinessBtn').addEventListener('click',saveBusinessSettings);

@@ -116,7 +116,7 @@
 <main class="main"><header class="topbar"><div class="crumb"><button type="button" class="crumb-home" data-switch="home">Home</button> <span aria-hidden="true"> / </span> <strong id="crumb">Home</strong></div><div class="top-actions"><button type="button" class="home-return" data-switch="home" aria-label="Go to Packet Lily home"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="m3 11 9-8 9 8v10h-6v-7H9v7H3z"/></svg><span>Home</span></button><span class="tiny-pill" id="connectivityBadge" role="status" aria-live="polite">● &nbsp; On-device workspace</span><span class="avatar" title="Pomegranate × Lily">P</span></div></header>
 <section id="screen-home" class="screen active" aria-labelledby="homeWelcome">
 <section class="hero"><div class="hero-copy"><div class="overline">POMEGRANATE × LILY / PACKET LILY</div><h1 id="homeWelcome">Job done.<br><em>Money next.</em></h1><p>Get from completed work to a polished invoice, a recorded payment, and a finished job—all in one place.</p><div class="hero-chips" aria-label="What Packet Lily helps you do"><span>Create invoices</span><span>Track payments</span><span>Close jobs</span></div></div><div class="hero-art" aria-hidden="true"><img src="icon.svg" width="128" height="128" alt=""></div></section>
-<div class="home-quick-actions"><button type="button" class="btn primary" data-switch="build">Create or continue invoice <span aria-hidden="true">→</span></button><button type="button" class="btn" data-switch="preview">Open invoice desk</button></div>
+<div class="home-quick-actions"><button type="button" class="btn primary" id="homeNextActionBtn">Open invoice →</button><button type="button" class="btn" data-switch="preview">Open invoice desk</button></div>
 <div class="home-intro"><div><span class="payment-eyebrow">GET STARTED</span><h2>Three steps. One finished job.</h2><p>New to Packet Lily? Here's how to use your workspace.</p></div></div>
 <div class="home-guides">
  <button type="button" class="home-guide" data-switch="business"><span class="home-guide-num">01</span><strong>Set up your business</strong><span>Add your name, contact details, and payment account once.</span><span class="home-guide-link">My Business →</span></button>
@@ -185,6 +185,12 @@
 <p class="help">Business details are saved on this device, not the cloud. Updating them never silently changes existing archived invoices.</p>
 </section></section>
 <section id="screen-preview" class="screen">
+<section class="workflow-guide" id="workflowGuide" aria-live="polite" aria-label="Invoice progress">
+ <div class="workflow-guide-header"><div><span class="payment-eyebrow">GUIDED WORKFLOW</span><h3 id="workflowTitle">Complete invoice details first</h3></div><span class="workflow-step" id="workflowStep">Step 1 of 4</span></div>
+ <div class="workflow-progress" aria-hidden="true"><span id="workflowProgress"></span></div>
+ <p id="workflowHint">Enter your business, customer and invoice amount to continue.</p>
+ <button type="button" class="btn primary" id="workflowNextBtn">Continue →</button>
+</section>
 <div class="generation-banner" id="generationBanner" role="status" aria-live="polite" hidden>
   <span class="generation-mark" aria-hidden="true">✓</span>
   <div class="generation-content">
@@ -192,16 +198,10 @@
     <p id="generationCaption">Your completed document appears below. You can save a copy or share it with your customer.</p>
   </div>
   <div class="generation-actions">
-    <button type="button" class="btn primary" id="sharePaymentBtn">Share payment request</button><button type="button" class="btn" id="emailInvoiceBtn">Email invoice (opens draft)</button><button type="button" class="btn" id="sharePacketBtn">Share PDF job packet</button>
+    <button type="button" class="btn" id="sharePaymentBtn">Share payment request</button><button type="button" class="btn" id="emailInvoiceBtn">Email invoice (opens draft)</button><button type="button" class="btn" id="sharePacketBtn">Share PDF job packet</button>
     <button type="button" class="btn" id="savePacketFileBtn">Save PDF job packet</button>
   </div>
 </div>
-<section class="workflow-guide" id="workflowGuide" aria-live="polite" aria-label="Invoice progress">
- <div class="workflow-guide-header"><div><span class="payment-eyebrow">GUIDED WORKFLOW</span><h3 id="workflowTitle">Complete invoice details first</h3></div><span class="workflow-step" id="workflowStep">Step 1 of 4</span></div>
- <div class="workflow-progress" aria-hidden="true"><span id="workflowProgress"></span></div>
- <p id="workflowHint">Enter your business, customer and invoice amount to continue.</p>
- <button type="button" class="btn primary small" id="workflowNextBtn">Continue →</button>
-</section>
 <div class="audience-switcher" aria-label="Invoice sections">
   <div class="audience-switcher-head"><strong>Invoice workspace</strong><span>PRIVATE • CONTRACTOR DEVICE</span></div>
   <nav class="audience-options desk-section-nav" aria-label="Invoice desk sections">
@@ -212,7 +212,7 @@
   </nav>
   <p id="audienceExplainer">Manage the job here. Open Payments or Receipts only when needed; Customer copy is a separate read-only preview.</p>
 </div>
-<div class="preview-toolbar"><div><h2>Invoice overview</h2><p>All your invoice details and next actions, without the extra screens.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn primary small" id="printBtn">Save / Print invoice PDF</button></div></div>
+<div class="preview-toolbar"><div><h2>Invoice overview</h2><p>All your invoice details and next actions, without the extra screens.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn small" id="printBtn">Save / Print invoice PDF</button></div></div>
 <div id="customerPreviewNotice" class="customer-preview-notice" hidden><strong>Customer copy preview — not a payment screen.</strong><p>This is how your customer’s invoice looks. The Cash App control is disabled in this preview. It is a working payment link only in the standalone file or request sent to the customer’s device.</p><button class="btn small" type="button" id="returnToDeskBtn">← Back to contractor desk</button></div>
 <section class="payment-center" id="paymentCenter" aria-labelledby="paymentsHeading">
   <div class="desk-pane" id="deskOverview">
@@ -226,8 +226,8 @@
     <div class="desk-due"><span>Balance due</span><strong id="deskBalanceTotal">$0.00</strong></div>
   </div>
   <div id="paymentFinish" class="payment-finish" hidden></div>
-  <div class="payment-close-actions"><button type="button" class="btn primary" id="closeInvoiceBtn">Complete &amp; close invoice</button><button type="button" class="btn" id="reopenInvoiceBtn" hidden>Reopen invoice for corrections</button></div>
-  <div class="overview-next"><button type="button" class="btn primary" id="overviewPaymentsBtn">Manage payments →</button><button type="button" class="btn" id="overviewReceiptsBtn">View receipts →</button><button type="button" class="btn" id="saveMonthDeskBtn">Save this month to Files</button></div>
+  <div class="payment-close-actions"><button type="button" class="btn" id="closeInvoiceBtn">Complete &amp; close invoice</button><button type="button" class="btn" id="reopenInvoiceBtn" hidden>Reopen invoice for corrections</button></div>
+  <div class="overview-next"><button type="button" class="btn" id="overviewPaymentsBtn">Manage payments →</button><button type="button" class="btn" id="overviewReceiptsBtn">View receipts →</button><button type="button" class="btn" id="saveMonthDeskBtn">Save this month to Files</button></div>
   </div>
   <div class="desk-pane" id="deskPayments" hidden>
     <div class="desk-pane-heading"><span class="payment-eyebrow">PAYMENT HISTORY</span><h3>Payments</h3><p>Only record money you've already received and verified outside Packet Lily.</p></div>

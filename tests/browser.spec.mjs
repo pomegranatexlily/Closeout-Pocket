@@ -214,3 +214,70 @@ test('small fractional payments sum in integer cents, without rounding drift',as
  await expect(page.locator('#liveBalance')).toHaveText('$0.00');
  await expect(page.locator('#deskBalanceTotal')).toHaveText('$0.00');
 });
+
+
+test('one next-action button advances from invoice draft through verified payment to receipt',async({page})=>{
+ page.on('dialog',dialog=>dialog.accept());
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'canShare',{configurable:true,value:({files})=>Array.isArray(files)&&files.length===1});
+  Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{
+   window.__packetSharedInvoice=(data.files||[]).map(file=>({name:file.name,type:file.type}));
+  }});
+ });
+ await page.goto('./');
+ await expect(page.locator('#homeNextActionBtn')).toHaveText('Open invoice →');
+ await page.locator('#homeNextActionBtn').click();
+ await expect(page.locator('#screen-build')).toHaveClass(/active/);
+ await page.locator('#demoBtn').click();
+ await expect(page.locator('#previewBtn')).toHaveText('Generate invoice →');
+ await page.locator('#previewBtn').click();
+ await expect(page.locator('#screen-preview')).toHaveClass(/active/);
+ await expect(page.locator('#workflowNextBtn')).toHaveText('Send invoice →');
+ await expect(page.locator('#deskPaidTotal')).toHaveText('$0.00');
+ await page.locator('#workflowNextBtn').click();
+ await expect(page.locator('#workflowNextBtn')).toHaveText('Record payment →');
+ const files=await page.evaluate(()=>window.__packetSharedInvoice);
+ expect(files).toHaveLength(1);
+ expect(files[0].name).toMatch(/invoice.*\.pdf$/i);
+ expect(files[0].type).toBe('application/pdf');
+ await expect(page.locator('#deskPaidTotal')).toHaveText('$0.00');
+ await expect(page.locator('#deskBalanceTotal')).toHaveText('$250.00');
+ await page.locator('#workflowNextBtn').click();
+ await expect(page.locator('#deskPayments')).toBeVisible();
+ await expect(page.locator('#payEntryAmount')).toBeEmpty();
+ await page.locator('#payEntryAmount').fill('50.00');
+ await page.locator('#payEntryMethod').selectOption('Cash');
+ await page.locator('#payOwnerConfirmed').check();
+ await page.locator('#recordPaymentBtn').click();
+ await expect(page.locator('#deskPaidTotal')).toHaveText('$50.00');
+ await expect(page.locator('#workflowNextBtn')).toHaveText('Record payment →');
+ await page.locator('#workflowNextBtn').click();
+ await page.locator('#payEntryAmount').fill('200.00');
+ await page.locator('#payEntryMethod').selectOption('Cash');
+ await page.locator('#payOwnerConfirmed').check();
+ await page.locator('#recordPaymentBtn').click();
+ await expect(page.locator('#workflowNextBtn')).toHaveText('Close job & get receipt →');
+ await expect(page.locator('#receiptsViewBtn')).toBeDisabled();
+ await page.locator('#workflowNextBtn').click();
+ await expect(page.locator('#workflowNextBtn')).toHaveText('View receipt →');
+ await expect(page.locator('#receiptsViewBtn')).toBeEnabled();
+ await expect(page.locator('#deskPaidTotal')).toHaveText('$250.00');
+ await expect(page.locator('#deskBalanceTotal')).toHaveText('$0.00');
+ await expect(page.locator('#receiptPanel')).toBeVisible();
+});
+
+test('cancelled sharing stays on Send invoice and does not record money',async({page})=>{
+ page.on('dialog',dialog=>dialog.accept());
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'canShare',{configurable:true,value:({files})=>Array.isArray(files)&&files.length>0});
+  Object.defineProperty(navigator,'share',{configurable:true,value:async()=>{throw new DOMException('Cancelled','AbortError')}});
+ });
+ await page.goto('./');
+ await page.locator('#bottomNav [data-switch="build"]').click();
+ await page.locator('#demoBtn').click();
+ await page.locator('#previewBtn').click();
+ await page.locator('#workflowNextBtn').click();
+ await expect(page.locator('#workflowNextBtn')).toHaveText('Send invoice →');
+ await expect(page.locator('#deskPaidTotal')).toHaveText('$0.00');
+ await expect(page.locator('#deskBalanceTotal')).toHaveText('$250.00');
+});
