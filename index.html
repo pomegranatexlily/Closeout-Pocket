@@ -57,11 +57,19 @@
 }
 
 
+
+.archive-tools{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:14px 0}
+.archive-tools input[type=search]{min-height:43px;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font:inherit;font-size:14px;min-width:160px;flex:1;background:white}
+.archive-stats{font-size:12px;color:#526c6d;margin:10px 0 15px;font-weight:700}
+.saved-item{align-items:flex-start}.saved-item h3,.saved-item p{overflow-wrap:anywhere}.saved-item p{line-height:1.6}
+.archive-pill{display:inline-block;background:#eef8f5;color:#176b61;border-radius:40px;font-size:10px;font-weight:850;padding:4px 8px;margin-top:7px}
+@media(max-width:680px){.saved-item{display:block}.saved-item .actions{margin-top:13px}.archive-tools input[type=search]{flex-basis:100%}}
+@media print{.archive-tools,.archive-stats{display:none!important}}
 </style>
 </head>
 <body>
 <div class="app">
-<aside class="sidebar" aria-label="Main navigation"><div class="brand"><span class="brand-mark"><b>✓</b></span><div><div class="brand-name">Closeout<br>Pocket.</div><div class="brand-sub">Pomegranate × Lily</div></div></div><div><div class="side-title">Workspace</div><nav class="nav" id="sideNav"></nav></div><div class="sidebar-bottom"><strong><span class="status-dot"></span>Local demo mode</strong><p>No login, server, or email setup. Drafts are stored in this browser when storage is available.</p></div></aside>
+<aside class="sidebar" aria-label="Main navigation"><div class="brand"><span class="brand-mark"><b>✓</b></span><div><div class="brand-name">Closeout<br>Pocket.</div><div class="brand-sub">Pomegranate × Lily</div></div></div><div><div class="side-title">Workspace</div><nav class="nav" id="sideNav"></nav></div><div class="sidebar-bottom"><strong><span class="status-dot"></span>Local demo mode</strong><p>Browser-local archive. Email opens a mail draft; it does not send automatically. Export backups regularly.</p></div></aside>
 <main class="main"><header class="topbar"><div class="crumb">Workspace <span aria-hidden="true"> / </span> <strong id="crumb">Build packet</strong></div><div class="top-actions"><span class="tiny-pill">● &nbsp; Demo workspace</span><span class="avatar" title="Pomegranate × Lily">P</span></div></header>
 <section class="hero"><div><div class="overline">Built for work that speaks for itself</div><h1>Finish the job.<br>Show the proof.</h1><p>Turn job notes, before-and-after photos, and payment details into a professional customer-ready completion packet.</p></div><div class="hero-art" aria-hidden="true"><span></span><span></span><span></span><b>✓</b></div></section>
 <div id="screen-build" class="screen active">
@@ -90,7 +98,7 @@
 <section class="card payment-card"><div class="card-head"><span class="card-num">04</span><div><h3>Payment details</h3><p>Make the balance unmistakable</p></div></div><div class="field-grid payment-fields"><div class="field"><label for="total">Job total ($)</label><input id="total" data-field="total" type="text" inputmode="decimal" autocomplete="off" placeholder="$250.00" aria-describedby="moneyHelp"></div>
 <div class="field"><label for="paid">Amount paid ($)</label><input id="paid" data-field="paid" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div><div class="field span"><label for="due">Payment due date (optional)</label><input id="due" type="date" data-field="due"></div><div class="field span"><label for="notes">Final notes (optional)</label><textarea id="notes" rows="3" data-field="notes" placeholder="Warranty, instructions, next steps, or thank-you note"></textarea></div></div><p class="help" id="moneyHelp">Amounts format automatically in USD: $10,000.00. Enter dollars and cents without typing the $ or commas.</p>
 <div class="summary-strip"><div class="sum-row"><span>Job total</span><strong id="liveTotal">$0.00</strong></div><div class="sum-row"><span>Payments received</span><strong id="livePaid">$0.00</strong></div><div class="sum-row total"><span id="balanceLabel">Balance due</span><strong id="liveBalance">$0.00</strong></div></div></section>
-<section class="card"><h3>Ready to close it out?</h3><p class="help">Start with the example, or enter an actual job. Preview before you print or share.</p><div class="action-bar"><button class="btn primary" id="previewBtn">Generate &amp; view packet →</button><button class="btn" id="saveBtn">Save draft</button><button class="btn" id="blankBtn">New blank</button><button class="btn small" id="demoBtn">Load example</button></div></section>
+<section class="card"><h3>Ready to close it out?</h3><p class="help">Start with the example, or enter an actual job. Preview before you print or share.</p><div class="action-bar"><button class="btn primary" id="previewBtn">Generate &amp; view packet →</button><button class="btn" id="saveBtn">Save to archive</button><button class="btn" id="blankBtn">New blank</button><button class="btn small" id="demoBtn">Load example</button></div></section>
 </div></div></div>
 <section id="screen-preview" class="screen">
 <div class="generation-banner" id="generationBanner" role="status" aria-live="polite" hidden>
@@ -100,13 +108,13 @@
     <p id="generationCaption">Your completed document appears below. You can save a copy or share it with your customer.</p>
   </div>
   <div class="generation-actions">
-    <button type="button" class="btn primary" id="sharePacketBtn">Share Job Packet</button>
+    <button type="button" class="btn primary" id="emailInvoiceBtn">Email invoice (opens draft)</button><button type="button" class="btn" id="sharePacketBtn">Share report file</button>
     <button type="button" class="btn" id="savePacketFileBtn">Save report file</button>
   </div>
 </div>
-<div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn small" id="downloadBtn">Save report file</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Your completed Job Packet is displayed above. “Save report file” downloads a self-contained HTML document, including photos. “Share Job Packet” opens your device’s share menu if supported; “Print / Save PDF” opens your browser’s print dialog. If an in-app viewer blocks printing or downloads, open the file in Safari. Nothing is emailed automatically.</p></section>
-<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Saved packets</h2><p>Packets saved in this browser on this device.</p></div><button class="btn primary small" data-switch="build">+ New packet</button></div><div id="savedList"></div><p class="help">Saved packets are not synced across devices. Avoid storing sensitive customer details on shared devices.</p></section>
-<p class="copyright">Closeout Pocket · Pomegranate × Lily · Prototype v1.2 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn small" id="downloadBtn">Save report file</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Generated packets are saved to your device archive when storage is available. “Email invoice” opens an addressed email draft with invoice details. You must review and tap Send in your email app; it does not attach a file. For a photo report attachment, use “Share report file” and choose Mail. “Save report file” downloads a self-contained HTML report. Email is never sent automatically.</p></section>
+<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-switch="build">+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup to Files</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
+<p class="copyright">Closeout Pocket · Pomegranate × Lily · Prototype v1.3 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -172,7 +180,7 @@ function fullAddress(){const location=[state.city,state.stateCode].filter(Boolea
 
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3300)}
 const icons={build:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h4"/></svg>',preview:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',saved:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h14v18l-7-4-7 4z"/></svg>'};
-const labels={build:'Build packet',preview:'Preview',saved:'Saved'};
+const labels={build:'Build packet',preview:'Preview',saved:'Invoices'};
 function nav(){for(const target of ['#sideNav','#bottomNav']){const host=$(target);host.innerHTML=Object.keys(labels).map(k=>`<button type="button" data-switch="${k}" class="${tab===k?'active':''}" aria-current="${tab===k?'page':'false'}">${icons[k]}<span>${labels[k]}</span></button>`).join('')}}
 function switchTo(which){if(!labels[which])return;tab=which;$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview')renderReport();if(which==='saved')renderSaved();window.scrollTo({top:0,behavior:'instant'})}
 function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport()}
