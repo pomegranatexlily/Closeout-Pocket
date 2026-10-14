@@ -672,13 +672,68 @@ Customer copy · Prepared with Packet Lily. For PDF, use your browser’s Print 
 </footer></body></html>`;
   return {name:title+'.html',blob:new Blob([doc],{type:'text/html;charset=utf-8'})};
 }
-function printCustomerInvoice(){
- const report=$('#report'),existing=report.innerHTML;
- report.innerHTML=reportMarkup('customer-export');
+function embeddedMobilePrint(){
+ const ua=String(navigator.userAgent||'');
+ return /iPhone|iPad|iPod|Android/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+}
+async function offerPrintPdf(blob,filename,title){
+ if(!blob||blob.type!=='application/pdf')throw new Error('Expected a PDF document.');
+ const file=typeof File==='function'?new File([blob],filename,{type:'application/pdf'}):null;
+ if(file&&typeof navigator.share==='function'&&typeof navigator.canShare==='function'){
+  let supported=false;
+  try{supported=navigator.canShare({files:[file]})}catch(error){console.warn('File sharing unavailable',error)}
+  if(supported){
+   try{
+    await navigator.share({title,files:[file]});
+    toast('PDF shared. Choose Print or Save to Files in the share sheet.');
+    return 'shared';
+   }catch(error){
+    if(error?.name==='AbortError')return 'cancelled';
+    console.warn('Falling back to PDF download after share error',error);
+   }
+  }
+ }
+ downloadBlob(blob,filename);
+ toast('PDF downloaded. Open it in Files, then Share → Print.');
+ return 'downloaded';
+}
+function customerInvoicePdf(){
+ if(!window.PacketLilyArchive?.makeInvoicePdf)throw new Error('Invoice PDF generator is unavailable.');
+ return window.PacketLilyArchive.makeInvoicePdf(clone(state));
+}
+function customerInvoicePdfName(){
+ return 'Packet-Lily-Invoice-'+String(state.ref||'Customer').replace(/[^a-z0-9_-]/gi,'-').slice(0,75)+'.pdf';
+}
+async function printCustomerInvoice(){
+ if(embeddedMobilePrint()||typeof window.print!=='function'){
+  try{return await offerPrintPdf(customerInvoicePdf(),customerInvoicePdfName(),'Packet Lily customer invoice')}
+  catch(error){console.error('Could not prepare invoice PDF',error);toast('Could not prepare the PDF. Try Safari or Save report file.');return 'error'}
+ }
+ const report=$('#report');report.innerHTML=reportMarkup('customer-export');
  let restored=false;
  const restore=()=>{if(restored)return;restored=true;renderReport()};
  if(typeof window.addEventListener==='function')window.addEventListener('afterprint',restore,{once:true});
- try{window.print()}finally{setTimeout(restore,1500)}
+ try{window.print();return 'print-dialog'}
+ catch(error){
+  restore();
+  console.warn('Browser printing failed; offering PDF instead',error);
+  try{return await offerPrintPdf(customerInvoicePdf(),customerInvoicePdfName(),'Packet Lily customer invoice')}
+  catch(err){console.error('Could not prepare PDF',err);toast('Printing is unavailable. Try Save report file.');return 'error'}
+ }finally{setTimeout(restore,1500)}
+}
+async function printReceipt(){
+ const p=currentReceipt();if(!p){toast('Select a recorded payment first.');return 'missing-receipt'}
+ if(embeddedMobilePrint()||typeof window.print!=='function'){
+  try{return await offerPrintPdf(makeReceiptPdf(p),receiptPdfFilename(p),'Packet Lily payment receipt')}
+  catch(error){console.error('Could not prepare printable receipt',error);toast('Could not prepare this PDF. Try Save PDF receipt.');return 'error'}
+ }
+ document.body.classList.add('print-receipt');
+ try{window.print();return 'print-dialog'}
+ catch(error){
+  console.warn('Browser receipt printing failed',error);
+  try{return await offerPrintPdf(makeReceiptPdf(p),receiptPdfFilename(p),'Packet Lily payment receipt')}
+  catch(err){console.error('Could not prepare receipt PDF',err);toast('Printing is unavailable. Try Save PDF receipt.');return 'error'}
+ }finally{setTimeout(()=>document.body.classList.remove('print-receipt'),1500)}
 }
 function downloadHTML(){
   let url;
@@ -762,7 +817,7 @@ $('#recordPaymentForm').addEventListener('submit',e=>{e.preventDefault();recordP
 $('#closeInvoiceBtn').addEventListener('click',closeInvoice);
 $('#reopenInvoiceBtn').addEventListener('click',reopenInvoice);
 $('#downloadReceiptBtn').addEventListener('click',downloadReceipt);
-$('#printReceiptBtn').addEventListener('click',()=>{if(!currentReceipt())return;document.body.classList.add('print-receipt');window.print();setTimeout(()=>document.body.classList.remove('print-receipt'),2000)});
+$('#printReceiptBtn').addEventListener('click',printReceipt);
 if(typeof window.addEventListener==='function')window.addEventListener('afterprint',()=>document.body.classList.remove('print-receipt'));
 $('#shareReceiptBtn').addEventListener('click',shareReceipt);
 $('#beforeFiles').addEventListener('change',e=>{photosFrom('before',e.target.files);e.target.value=''});
