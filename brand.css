@@ -424,3 +424,8 @@ input,textarea,select{scroll-margin-top:75px;scroll-margin-bottom:calc(125px + e
 
 /* Consistent controls across iPhone system light/dark settings; optional dark theme requires full design QA. */
 :root{color-scheme:light}
+
+
+/* Cash App reusable profile does not use exact amount confirmation. */
+.confirm-request[hidden]{display:none!important}
+#paymentLinkStatus{line-height:1.55;max-width:580px;overflow-wrap:anywhere}
