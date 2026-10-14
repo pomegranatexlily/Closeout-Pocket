@@ -216,7 +216,7 @@
   </div>
   <div id="paymentFinish" class="payment-finish" hidden></div>
   <div class="payment-close-actions"><button type="button" class="btn primary" id="closeInvoiceBtn">Complete &amp; close invoice</button><button type="button" class="btn" id="reopenInvoiceBtn" hidden>Reopen invoice for corrections</button></div>
-  <div class="overview-next"><button type="button" class="btn primary" id="overviewPaymentsBtn">Manage payments →</button><button type="button" class="btn" id="overviewReceiptsBtn">View receipts →</button></div>
+  <div class="overview-next"><button type="button" class="btn primary" id="overviewPaymentsBtn">Manage payments →</button><button type="button" class="btn" id="overviewReceiptsBtn">View receipts →</button><button type="button" class="btn" id="saveMonthDeskBtn">Save this month to Files</button></div>
   </div>
   <div class="desk-pane" id="deskPayments" hidden>
     <div class="desk-pane-heading"><span class="payment-eyebrow">PAYMENT HISTORY</span><h3>Payments</h3><p>Only record money you've already received and verified outside Packet Lily.</p></div>
@@ -245,11 +245,18 @@
   </div>
 </section>
 <article class="report" id="report" aria-label="Read-only invoice review"></article><p class="help" style="max-width:830px;margin:15px auto">Contractor desk is private. A shared invoice file contains only customer-facing invoice details and a payment link when configured; it never contains your payment desk, transaction ledger, or internal notes. A Cash App link is not proof of payment.</p></section>
-<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-new-invoice>+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
+<section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-new-invoice>+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><section class="filing-panel" aria-labelledby="filingHeading">
+ <div class="filing-heading"><div><span class="payment-eyebrow">DOCUMENT FILING</span><h3 id="filingHeading">Save organized PDF folders</h3><p>Package your invoices and recorded-payment receipts by year and month. iPhone Files can extract the ZIP into actual folders.</p></div><span class="filing-icon" aria-hidden="true">↳</span></div>
+ <div class="filing-actions"><div class="field"><label for="filingMonth">Choose a month</label><select id="filingMonth" aria-describedby="filingHelp"><option value="">No invoices archived</option></select></div>
+ <button type="button" class="btn primary" id="saveMonthZipBtn">Save month's folder (ZIP)</button><button type="button" class="btn" id="saveAllZipBtn">Save all months (ZIP)</button></div>
+ <p id="filingHelp" class="filing-footnote">A ZIP can be shared or downloaded to Files. Inside it: invoice PDFs, receipt PDFs, Excel-readable CSV ledgers and a JSON backup. Nothing is silently saved to your device.</p>
+ <p id="filingStatus" class="filing-status" role="status" aria-live="polite"></p>
+</section>
+<div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
 <section class="privacy-notice" id="privacySettings"><h3>Privacy &amp; device storage</h3><p id="storageStateText"></p><div class="action-bar"><button type="button" class="btn small" id="toggleDeviceSaveBtn">Change saving preference</button><button type="button" class="btn danger small" id="eraseDeviceBtn">Erase all local invoices and drafts</button><a class="btn small" href="privacy.html">Privacy details</a></div><p class="help">No analytics, advertising trackers, or nonessential cookies are used. Your archive is not a secure multi-device business database.</p></section><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Packet Lily · Pomegranate × Lily · v3.5 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<p class="copyright">Packet Lily · Pomegranate × Lily · v3.6 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js" defer></script>
+<script src="filing.js" defer></script><script src="app.js" defer></script>
 </body>
 </html>
