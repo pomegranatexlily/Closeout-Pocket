@@ -1,8 +1,20 @@
 import {test,expect} from '@playwright/test';
+test('app initializes its JavaScript navigation on both mobile engines',async({page},testInfo)=>{
+ const errors=[],failedRequests=[];
+ page.on('pageerror',error=>errors.push(String(error)));
+ page.on('requestfailed',req=>failedRequests.push(req.url()+' '+(req.failure()?.errorText||'')));
+ await page.goto('./');
+ await page.waitForTimeout(1200);
+ const snapshot=await page.evaluate(()=>({url:location.href,navButtons:document.querySelectorAll('#bottomNav [data-switch]').length,scriptTags:[...document.scripts].map(s=>({src:s.src,ready:s.readyState})),appJsResources:performance.getEntriesByType('resource').filter(r=>/app\.js|filing\.js/.test(r.name)).map(r=>({name:r.name,transferSize:r.transferSize})),screen:document.querySelector('#screen-home')?.className}));
+ console.log('Packet Lily initialization',testInfo.project.name,JSON.stringify({snapshot,errors,failedRequests}));
+ expect(snapshot.navButtons,'App did not populate the mobile navigation. See script/network/page errors above.').toBeGreaterThan(0);
+});
+
 test('Cash App profile explains manual amount and exact request checkbox only appears for actual request links',async({page})=>{
  await page.goto('./');
  await page.locator('#bottomNav [data-switch="build"]').click();
  await page.locator('#invoiceExtras > summary').click();
+ await page.locator('#total').fill('50.00');
  await page.locator('#paymentLink').fill('https://cash.app/$Example');
  await expect(page.locator('#paymentLinkStatus')).toContainText('customer must enter');
  await expect(page.locator('#confirmRequestRow')).toBeHidden();
