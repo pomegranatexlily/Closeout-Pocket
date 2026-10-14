@@ -1,0 +1,22 @@
+name: Validate Closeout Pocket
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check script syntax
+        run: |
+          node --check app.js
+          node --check sw.js
+      - name: Run no-dependency smoke tests
+        run: node tests/smoke.cjs
