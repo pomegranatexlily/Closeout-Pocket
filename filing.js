@@ -142,7 +142,7 @@ async function buildPackage(records,scope,receiptPdf,progress=()=>{}){
    const paidMonth=monthKey(p.date);
    if(!paidMonth||(scope!=='all'&&paidMonth!==scope))continue;
    paymentRows.push([p.date,r.ref,r.customer,(cents(p.amount)/100).toFixed(2),p.method,p.reference||'',p.id,p.source==='legacy'?'Legacy, unverified':'Owner-entered','Recorded, not bank-verified']);
-   if(p.source==='owner'&&p.verifiedByOwner===true){
+   if(r.closedAt&&cents(r.paid)>=cents(r.total)&&p.source==='owner'&&p.verifiedByOwner===true){
     const receiptName='Receipt-'+safeName(p.id)+'-'+id+'.pdf';
     add(group(paidMonth)+'/Receipts/'+receiptName,receiptPdf(p,r));
    }
