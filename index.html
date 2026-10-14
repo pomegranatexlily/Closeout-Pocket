@@ -65,6 +65,13 @@
 .archive-pill{display:inline-block;background:#eef8f5;color:#176b61;border-radius:40px;font-size:10px;font-weight:850;padding:4px 8px;margin-top:7px}
 @media(max-width:680px){.saved-item{display:block}.saved-item .actions{margin-top:13px}.archive-tools input[type=search]{flex-basis:100%}}
 @media print{.archive-tools,.archive-stats{display:none!important}}
+
+/* Optional Cash App payment link and mobile-friendly request. */
+.r-payment-link{margin-top:14px;padding:18px;border:1px solid #cfe8dc;background:#f0faf5;border-radius:12px;break-inside:avoid}
+.r-payment-link .pay-label{font-weight:800;font-size:12px;color:#146b57;margin:0 0 9px}
+.r-payment-link a{display:block;max-width:360px;text-align:center;text-decoration:none;background:#0b744a;color:#fff;border-radius:10px;font-size:14px;font-weight:800;padding:14px 16px;overflow-wrap:anywhere}
+.r-payment-link .pay-explain{font-size:10px;margin:9px 0 0;color:#4b665e;line-height:1.5}
+@media print{.r-payment-link a{background:#0b744a!important;color:white!important}}
 </style>
 </head>
 <body>
@@ -96,7 +103,8 @@
 </div><div class="stack">
 <section class="card"><div class="card-head"><span class="card-num">03</span><div><h3>Photo evidence</h3><p>Document the result in pictures</p></div></div><div class="photo-grid"><div><label for="beforeFiles" class="upload-area"><span class="upload-icon">＋</span><strong>Add before photos</strong><span>Choose up to 4 photos</span></label><input id="beforeFiles" type="file" accept="image/*" multiple hidden><div class="thumbs" id="beforeThumbs"></div></div><div><label for="afterFiles" class="upload-area"><span class="upload-icon">＋</span><strong>Add after photos</strong><span>Choose up to 4 photos</span></label><input id="afterFiles" type="file" accept="image/*" multiple hidden><div class="thumbs" id="afterThumbs"></div></div></div><p class="help">Photos are resized to keep packets lightweight. This demo stores images only in the current browser; it does not upload them.</p></section>
 <section class="card payment-card"><div class="card-head"><span class="card-num">04</span><div><h3>Payment details</h3><p>Make the balance unmistakable</p></div></div><div class="field-grid payment-fields"><div class="field"><label for="total">Job total ($)</label><input id="total" data-field="total" type="text" inputmode="decimal" autocomplete="off" placeholder="$250.00" aria-describedby="moneyHelp"></div>
-<div class="field"><label for="paid">Amount paid ($)</label><input id="paid" data-field="paid" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div><div class="field span"><label for="due">Payment due date (optional)</label><input id="due" type="date" data-field="due"></div><div class="field span"><label for="notes">Final notes (optional)</label><textarea id="notes" rows="3" data-field="notes" placeholder="Warranty, instructions, next steps, or thank-you note"></textarea></div></div><p class="help" id="moneyHelp">Amounts format automatically in USD: $10,000.00. Enter dollars and cents without typing the $ or commas.</p>
+<div class="field"><label for="paid">Amount paid ($)</label><input id="paid" data-field="paid" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div><div class="field span"><label for="due">Payment due date (optional)</label><input id="due" type="date" data-field="due"></div>
+<div class="field span"><label for="paymentLink">Cash App payment-request link (optional)</label><input id="paymentLink" data-field="paymentLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://cash.app/…"><small>Request this invoice's amount inside Cash App, choose its shareable payment link, and paste it here. Check the amount and recipient before sharing.</small></div><div class="field span"><label for="notes">Final notes (optional)</label><textarea id="notes" rows="3" data-field="notes" placeholder="Warranty, instructions, next steps, or thank-you note"></textarea></div></div><p class="help" id="moneyHelp">Amounts format automatically in USD: $10,000.00. Enter dollars and cents without typing the $ or commas.</p>
 <div class="summary-strip"><div class="sum-row"><span>Job total</span><strong id="liveTotal">$0.00</strong></div><div class="sum-row"><span>Payments received</span><strong id="livePaid">$0.00</strong></div><div class="sum-row total"><span id="balanceLabel">Balance due</span><strong id="liveBalance">$0.00</strong></div></div></section>
 <section class="card"><h3>Ready to close it out?</h3><p class="help">Start with the example, or enter an actual job. Preview before you print or share.</p><div class="action-bar"><button class="btn primary" id="previewBtn">Generate &amp; view packet →</button><button class="btn" id="saveBtn">Save to archive</button><button class="btn" id="blankBtn">New blank</button><button class="btn small" id="demoBtn">Load example</button></div></section>
 </div></div></div>
@@ -108,13 +116,13 @@
     <p id="generationCaption">Your completed document appears below. You can save a copy or share it with your customer.</p>
   </div>
   <div class="generation-actions">
-    <button type="button" class="btn primary" id="emailInvoiceBtn">Email invoice (opens draft)</button><button type="button" class="btn" id="sharePacketBtn">Share report file</button>
+    <button type="button" class="btn primary" id="sharePaymentBtn">Share payment request</button><button type="button" class="btn" id="emailInvoiceBtn">Email invoice (opens draft)</button><button type="button" class="btn" id="sharePacketBtn">Share report file</button>
     <button type="button" class="btn" id="savePacketFileBtn">Save report file</button>
   </div>
 </div>
-<div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn small" id="downloadBtn">Save report file</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Generated packets are saved to your device archive when storage is available. “Email invoice” opens an addressed email draft with invoice details. You must review and tap Send in your email app; it does not attach a file. For a photo report attachment, use “Share report file” and choose Mail. “Save report file” downloads a self-contained HTML report. Email is never sent automatically.</p></section>
+<div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn small" id="downloadBtn">Save report file</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Generated packets are saved to your device archive when storage is available. “Share payment request” opens your device's share menu with the invoice details and a Cash App payment link—no attachment. You must choose a contact and tap Send. “Email invoice” opens an addressed email draft with invoice details and your Cash App link when provided. You must review and tap Send in your email app; it does not attach a file. For a photo report attachment, use “Share report file” and choose Mail. “Save report file” downloads a self-contained HTML report. Email is never sent automatically.</p></section>
 <section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-switch="build">+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Closeout Pocket · Pomegranate × Lily · Prototype v1.3 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<p class="copyright">Closeout Pocket · Pomegranate × Lily · Prototype v1.4 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -123,8 +131,8 @@
 const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1';
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const demo=()=>({company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
-const blank=()=>({company:'',phone:'',companyEmail:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',notes:'',photos:{before:[],after:[]}});
-const fields=['company','phone','companyEmail','customer','customerEmail','job','address','city','stateCode','zip','date','ref','summary','work','total','paid','due','notes'];
+const blank=()=>({company:'',phone:'',companyEmail:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',notes:'',photos:{before:[],after:[]}});
+const fields=['company','phone','companyEmail','customer','customerEmail','job','address','city','stateCode','zip','date','ref','summary','work','total','paid','due','paymentLink','notes'];
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
 const safe=val=>String(val??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dash=(v)=>v? safe(v):'—';
@@ -188,7 +196,53 @@ function autosave(){persist(K_DRAFT,state)}
 function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=total-paid;$('#liveTotal').textContent=fmt(total);$('#livePaid').textContent=fmt(paid);$('#balanceLabel').textContent=bal>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(bal))}
 function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs').innerHTML=state.photos[kind].map((item,i)=>`<div class="thumb"><img src="${safe(item.data)}" alt="${kind} photo ${i+1}"><button type="button" data-remove-photo="${kind}:${i}" aria-label="Remove ${kind} photo ${i+1}">×</button></div>`).join('')}}
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
-function reportMarkup(){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0;return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}</div></div><div style="text-align:right"><div class="r-label">Completion report</div><div class="r-title">Job Packet</div><div class="r-badge">✓ WORK COMPLETED</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">Job details</div><div class="r-value">${dash(state.job)}</div><div class="r-light">Completed: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):'No work details recorded.'}</p></section>${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
+function cashAppUrl(){
+ const raw=String(state.paymentLink||'').trim();
+ if(!raw)return '';
+ try{
+  const url=new URL(raw);
+  if(url.protocol!=='https:'||!['cash.app','www.cash.app'].includes(url.hostname.toLowerCase())||url.username||url.password||url.pathname==='/')return '';
+  return url.href;
+ }catch(e){return ''}
+}
+function paymentRequestText(){
+ const balance=num(state.total)-num(state.paid);
+ const link=cashAppUrl();
+ if(balance<=0.005)return '';
+ return [
+  (state.company||'Closeout Pocket')+' · PAYMENT REQUEST',
+  'Invoice '+(state.ref||'—'),
+  'For: '+(state.job||'Service'),
+  'Amount due: '+fmt(balance),
+  state.due?'Due: '+niceDate(state.due):'',
+  'Pay using this Cash App request link:',
+  link,
+  'Please confirm the recipient and amount in Cash App before paying.'
+ ].filter(Boolean).join('\n');
+}
+async function sharePaymentRequest(){
+ const balance=num(state.total)-num(state.paid),link=cashAppUrl();
+ if(balance<=0.005){toast('No balance is due on this invoice.');return}
+ if(!link){
+  toast('First paste a valid Cash App payment-request link.');
+  switchTo('build');$('#paymentLink').focus();return;
+ }
+ if(!savePacket(true))toast('Archive unavailable; remember to export a backup.');
+ const message=paymentRequestText();
+ if(navigator.share){
+  try{
+   await navigator.share({title:'Payment request '+(state.ref||''),text:message});
+   return;
+  }catch(e){if(e?.name==='AbortError')return;console.error('Share request failed',e)}
+ }
+ try{
+  await navigator.clipboard.writeText(message);
+  toast('Payment request copied. Paste it into Messages or email.');
+ }catch(e){
+  toast('Unable to share here. Open Safari and try again.');
+ }
+}
+function reportMarkup(){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0;return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}</div></div><div style="text-align:right"><div class="r-label">Completion report</div><div class="r-title">Job Packet</div><div class="r-badge">✓ WORK COMPLETED</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">Job details</div><div class="r-value">${dash(state.job)}</div><div class="r-light">Completed: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):'No work details recorded.'}</p></section>${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${balance>0.005&&cashAppUrl()?`<section class="r-payment-link"><p class="pay-label">Secure payment through Cash App</p><a href="${safe(cashAppUrl())}" target="_blank" rel="noopener noreferrer">Pay ${fmt(balance)} with Cash App →</a><p class="pay-explain">Payment is handled by Cash App, not Closeout Pocket. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
 function renderReport(){$('#report').innerHTML=reportMarkup()}
 function renderSaved(){
  const wrap=$('#savedList');
@@ -270,7 +324,7 @@ function emailInvoice(){
   'Paid: '+fmt(num(state.paid)),
   (bal<0?'Customer credit':'Balance due')+': '+fmt(Math.abs(bal)),
   state.due?'Due date: '+niceDate(state.due):'',
-  state.notes||'','','Prepared by '+(state.company||'Service provider')
+  state.notes||'',cashAppUrl()&&bal>0.005?'\nPAY NOW — Cash App request link:\n'+cashAppUrl()+'\nConfirm the payee and amount in Cash App.':'','','Prepared by '+(state.company||'Service provider')
  ].join('\n');
  savePacket(true);
  toast('Opening email draft. Review and tap Send.');
@@ -361,6 +415,7 @@ $('#afterFiles').addEventListener('change',e=>{photosFrom('after',e.target.files
 $('#previewBtn').addEventListener('click',generatePacket);
 $('#sharePacketBtn').addEventListener('click',shareReport);
 $('#emailInvoiceBtn').addEventListener('click',emailInvoice);
+$('#sharePaymentBtn').addEventListener('click',sharePaymentRequest);
 $('#archiveSearch').addEventListener('input',renderSaved);
 $('#exportArchiveBtn').addEventListener('click',exportArchive);
 $('#importArchiveFile').addEventListener('change',async e=>{await importArchive(e.target.files[0]);e.target.value=''});
