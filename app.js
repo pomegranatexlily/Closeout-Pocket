@@ -398,18 +398,111 @@ function receiptText(p){
  const paid=cents(state.paid),total=cents(state.total);
  return ['PACKET LILY · PAYMENT RECEIPT','Recorded by: '+(state.company||'Business owner'),'Customer: '+(state.customer||'—'),'Invoice: '+(state.ref||'—'),'Payment recorded: '+fmt(cents(p.amount)/100),'Date received: '+niceDate(p.date),'Method: '+p.method,'Receipt reference: '+p.id,p.reference?'Transaction reference: '+p.reference:'','Total recorded payments: '+fmt(paid/100),'Current balance: '+fmt(Math.max(0,total-paid)/100),'Owner-confirmed record only. Packet Lily did not independently verify the transaction.'].filter(Boolean).join('\n');
 }
+/* A real one-page PDF receipt made locally. No HTML attachment and no remote library. */
+function makeReceiptPdf(p){
+ if(!p||p.source!=='owner'||p.verifiedByOwner!==true||p.voidedAt)throw new Error('An owner-confirmed payment must be selected.');
+ const canvas=document.createElement('canvas');
+ canvas.width=1190;canvas.height=1684;
+ const ctx=canvas.getContext('2d');
+ if(!ctx)throw new Error('PDF drawing is unavailable on this device.');
+ ctx.scale(2,2);
+ const W=595,H=842;
+ ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+ const header=ctx.createLinearGradient(0,0,W,205);header.addColorStop(0,'#261531');header.addColorStop(1,'#5c3874');
+ ctx.fillStyle=header;ctx.fillRect(0,0,W,205);
+ ctx.textBaseline='top';
+ const write=(value,x,y,size=12,color='#30203f',weight='normal',maxWidth=505)=>{
+  ctx.font=weight+' '+size+'px system-ui, -apple-system, sans-serif';
+  let str=String(value??'').replace(/\\s+/g,' ').trim();
+  if(!str)str='—';
+  while(str.length>1&&ctx.measureText(str).width>maxWidth)str=str.slice(0,-2)+'…';
+  ctx.fillStyle=color;ctx.fillText(str,x,y);
+ };
+ const wrap=(value,x,y,width,maxLines=2,size=11,color='#e3d8e9')=>{
+  ctx.font='normal '+size+'px system-ui, -apple-system, sans-serif';
+  const words=String(value||'').split(/\\s+/).filter(Boolean);
+  let lines=[],line='';
+  for(const word of words){
+   const candidate=line?line+' '+word:word;
+   if(ctx.measureText(candidate).width>width&&line){lines.push(line);line=word;}else line=candidate;
+  }
+  if(line)lines.push(line);
+  lines.slice(0,maxLines).forEach((t,i)=>write(t,x,y+i*(size+6),size,color,'normal',width));
+ };
+ write('PACKET LILY',43,28,24,'#fff6fc','bold');
+ write('BY POMEGRANATE × LILY',43,62,10,'#f1c994','bold');
+ write('PAYMENT RECEIPT',43,102,32,'#ffffff','bold');
+ wrap('Prepared by '+(state.company||'Business owner')+' · '+[state.phone,state.companyEmail].filter(Boolean).join(' · '),43,157,490,2,11,'#e2d2e9');
+ write('PAYMENT RECORDED',43,232,10,'#7d6590','bold');
+ write(fmt(cents(p.amount)/100),43,253,43,'#2a173d','bold');
+ ctx.fillStyle='#e5daeb';ctx.fillRect(43,327,509,1);
+ const box=(label,value,x,y,width=230)=>{
+   write(label.toUpperCase(),x,y,10,'#816f90','bold',width);
+   wrap(value,x,y+23,width,2,13,'#30203f');
+ };
+ box('Paid by',state.customer||'—',43,349,225);
+ box('Invoice',state.ref||'—',308,349,241);
+ box('Date received',niceDate(p.date),43,419,225);
+ box('Payment method',p.method,308,419,241);
+ box('Receipt reference',p.id,43,489,225);
+ box('Provider reference',p.reference||'Not supplied',308,489,241);
+ box('Recorded by',state.company||'Business owner',43,559,225);
+ const balance=cents(state.total)-cents(state.paid);
+ box('Invoice status',state.closedAt?'Closed · paid in full':balance<=0?'Paid in full · not closed':'Partially paid',308,559,241);
+ ctx.fillStyle='#f6f0fa';ctx.fillRect(43,634,509,94);
+ const row=(label,value,y,bold=false)=>{
+  write(label,60,y,12,'#655876',bold?'bold':'normal',312);
+  write(value,422,y,13,'#2e1b40','bold',117);
+ };
+ row('Invoice total',fmt(cents(state.total)/100),651);
+ row('Total recorded payments',fmt(cents(state.paid)/100),676);
+ row('Remaining balance',fmt(Math.max(0,balance)/100),702,true);
+ ctx.fillStyle='#e4d9ec';ctx.fillRect(43,750,509,1);
+ wrap('Business-owner-recorded receipt. Packet Lily has not independently verified the payment or the arrival of funds. Current invoice totals may change after corrections.',43,765,509,3,10,'#796b84');
+ const dataUrl=canvas.toDataURL('image/jpeg',.88);
+ if(!dataUrl.startsWith('data:image/jpeg;base64,'))throw new Error('Could not encode receipt for PDF.');
+ const binary=atob(dataUrl.slice(dataUrl.indexOf(',')+1));
+ const jpg=new Uint8Array(binary.length);
+ for(let k=0;k<binary.length;k++)jpg[k]=binary.charCodeAt(k);
+ if(jpg.length<4||jpg[0]!==255||jpg[1]!==216)throw new Error('Invalid receipt image.');
+ const enc=new TextEncoder(),chunks=[];let length=0;
+ const add=bytes=>{chunks.push(bytes);length+=bytes.length};
+ const ascii=str=>add(enc.encode(str));
+ const offsets=[0];
+ const obj=(n,str)=>{offsets[n]=length;ascii(n+' 0 obj\\n'+str+'\\nendobj\\n')};
+ ascii('%PDF-1.4\\n');
+ obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+ obj(2,'<< /Type /Pages /Count 1 /Kids [3 0 R] >>');
+ obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>');
+ offsets[4]=length;
+ ascii('4 0 obj\\n<< /Type /XObject /Subtype /Image /Width 1190 /Height 1684 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\\nstream\\n');
+ add(jpg);ascii('\\nendstream\\nendobj\\n');
+ const draw='q\\n595 0 0 842 0 0 cm\\n/Im1 Do\\nQ\\n';
+ obj(5,'<< /Length '+enc.encode(draw).length+' >>\\nstream\\n'+draw+'endstream');
+ const xref=length;
+ ascii('xref\\n0 6\\n0000000000 65535 f \\n');
+ for(let n=1;n<=5;n++)ascii(String(offsets[n]).padStart(10,'0')+' 00000 n \\n');
+ ascii('trailer\\n<< /Size 6 /Root 1 0 R >>\\nstartxref\\n'+xref+'\\n%%EOF');
+ return new Blob(chunks,{type:'application/pdf'});
+}
+function receiptPdfFilename(p){return 'Packet-Lily-Receipt-'+String(p.id).replace(/[^a-z0-9-]/gi,'').slice(0,100)+'.pdf'}
 function downloadReceipt(){
- const p=currentReceipt();if(!p){toast('Select an owner-confirmed payment to create a receipt.');return}
- const css='*{box-sizing:border-box}body{margin:0;padding:20px;background:#f8f6fb;font:14px/1.5 system-ui,-apple-system,sans-serif;color:#2d1e3e}.receipt-sheet{max-width:740px;margin:auto;border-radius:16px;background:#fff;overflow:hidden;border:1px solid #e0d6ea}.receipt-top{background:#30203f;color:#fff;padding:28px 30px}.receipt-tag{letter-spacing:2px;color:#e3c0fe;font-size:10px}.receipt-brand{font-size:20px;font-weight:900;margin-top:10px}.receipt-brand small{display:block;font-size:9px;letter-spacing:1.5px;color:#f6c985}.receipt-top h3{font-size:29px;color:white;margin:12px 0}.receipt-top p{font-size:11px;color:#e2d4ed}.receipt-main{padding:26px 30px}.receipt-amount{font-size:39px;color:#2d1e3e;font-weight:900;margin-bottom:18px}.receipt-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px}.receipt-grid span{display:block;font-size:10px;color:#84728e;text-transform:uppercase}.receipt-grid strong{display:block;font-size:13px;overflow-wrap:anywhere}.receipt-totals{border-top:1px solid #e4d9e9;margin-top:22px;padding-top:13px}.receipt-totals div{display:flex;justify-content:space-between;margin-bottom:10px}.receipt-note{padding:15px 30px;font-size:11px;line-height:1.65;color:#665674;border-top:1px solid #eadfee}@media print{body{padding:0;background:white}.receipt-sheet{border:0;border-radius:0}@page{margin:.35in}}';
- const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Packet Lily receipt '+safe(p.id)+'</title><style>'+css+'</style></head><body><article class="receipt-sheet">'+receiptMarkup(p)+'</article></body></html>';
- downloadBlob(new Blob([html],{type:'text/html;charset=utf-8'}),'Packet-Lily-Receipt-'+p.id.replace(/[^a-z0-9-]/gi,'')+'.html');
- toast('Receipt downloaded. Open and Print / Save as PDF for a PDF copy.');
+ const p=currentReceipt();if(!p){toast('Select an owner-confirmed payment first.');return}
+ try{downloadBlob(makeReceiptPdf(p),receiptPdfFilename(p));toast('PDF receipt ready. Save it to Files or share it with your customer.')}
+ catch(e){console.error('Could not make a PDF receipt',e);toast('Unable to make a PDF on this device. Use Print / PDF instead.')}
 }
 async function shareReceipt(){
- const p=currentReceipt();if(!p){toast('Select a recorded payment first.');return}
- const content=receiptText(p);
- if(navigator.share){try{await navigator.share({title:'Payment receipt '+(state.ref||''),text:content});return}catch(e){if(e?.name==='AbortError')return}}
- try{await navigator.clipboard.writeText(content);toast('Receipt text copied for sharing.')}catch(e){toast('Could not share here. Download the receipt instead.')}
+ const p=currentReceipt();if(!p){toast('Select an owner-confirmed payment first.');return}
+ try{
+  const blob=makeReceiptPdf(p),filename=receiptPdfFilename(p);
+  const file=typeof File==='function'?new File([blob],filename,{type:'application/pdf'}):null;
+  if(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+   try{await navigator.share({title:'Packet Lily payment receipt',files:[file]});return}
+   catch(e){if(e?.name==='AbortError')return}
+  }
+  downloadBlob(blob,filename);
+  toast('PDF saved. Share it from the Files app.');
+ }catch(e){console.error('Unable to share receipt PDF',e);toast('PDF sharing unavailable. Try Print / PDF.')}
 }
 
 function renderSaved(){
