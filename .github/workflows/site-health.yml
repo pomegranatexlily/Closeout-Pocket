@@ -1,0 +1,20 @@
+name: Check Closeout Pocket site
+on:
+  schedule:
+    - cron: '15 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public site and script
+        env:
+          SITE_URL: https://pomegranatexlily.github.io/Closeout-Pocket/
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 5 --max-time 30 --silent --show-error "$SITE_URL" -o /tmp/closeout-home.html
+          grep -q 'Closeout Pocket' /tmp/closeout-home.html
+          curl --fail --location --retry 3 --retry-delay 5 --max-time 30 --silent --show-error "${SITE_URL}app.js" -o /tmp/closeout-app.js
+          grep -q 'paymentRequestState' /tmp/closeout-app.js
