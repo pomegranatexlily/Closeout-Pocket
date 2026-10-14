@@ -167,7 +167,25 @@ function renderWorkflowGuide(){
  $('#overviewPaymentsBtn').disabled=!invoicePrepared();
  const toolbar=$('#printBtn');if(toolbar)toolbar.disabled=!invoicePrepared();
 }
-function switchTo(which){if(!labels[which])return;if(which==='preview'&&!invoicePrepared()){guideToDraft('Generate a valid invoice before entering its desk.');return}tab=which;if(which==='preview'){viewMode='owner';deskSection='overview'}$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter();renderWorkflowGuide()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
+function renderInvoiceActions(){
+ const panel=$('#generationBanner');if(!panel)return;
+ const prepared=invoicePrepared(),stage=invoiceStage();
+ panel.hidden=!prepared;
+ if(!prepared)return;
+ const balance=Math.max(0,cents(state.total)-cents(state.paid));
+ const title=panel.querySelector?.('strong');
+ if(title)title.textContent=stage==='closed'?'This job is closed.':stage==='ready-close'?'Payment recorded — complete closeout.':'Your customer invoice is ready.';
+ $('#generationCaption').textContent=stage==='closed'
+  ?'Paid and closed. Final receipts are available under Receipts. You can still share a copy of the completed job.'
+  :stage==='ready-close'
+  ?'Recorded payments cover the amount due. Confirm the closeout before issuing the final receipt.'
+  :'Invoice '+(state.ref||'')+' is ready. Share it with the customer and record payments when the money arrives. Balance due: '+fmt(balance/100)+'.';
+ $('#sharePaymentBtn').hidden=stage==='closed'||stage==='ready-close';
+ $('#emailInvoiceBtn').hidden=false;
+ $('#sharePacketBtn').hidden=false;
+ $('#savePacketFileBtn').hidden=false;
+}
+function switchTo(which){if(!labels[which])return;if(which==='preview'&&!invoicePrepared()){guideToDraft('Generate a valid invoice before entering its desk.');return}tab=which;if(which==='preview'){viewMode='owner';deskSection='overview'}$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter();renderWorkflowGuide();renderInvoiceActions()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
 function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport();renderPaymentStatus();renderPaymentCenter();const txt=$('#businessOnInvoice');if(txt)txt.textContent=state.company?'From '+state.company:'Set up your business details under My Business.'}
 function renderStorageChoice(){
  const notice=$('#deviceSaveNotice');
@@ -417,6 +435,7 @@ function recordPayment(){
  $('#payOwnerConfirmed').checked=false;
  renderBalance();renderReport();renderPaymentStatus();renderPaymentCenter();
  const archived=savePacket(true);
+ renderInvoiceActions();
  if(invoiceStage()==='ready-close')setDeskSection('overview',true);else setDeskSection('payments');
  toast('Payment '+fmt(amount/100)+' recorded by you.'+(archived?' Invoice updated.':' Not archived; enable local saving or export your records.'));
 }
@@ -439,6 +458,7 @@ function closeInvoice(){
  receiptPaymentId=activePayments().filter(p=>p.source==='owner'&&p.verifiedByOwner).slice(-1)[0]?.id||'';
  renderReport();renderPaymentCenter();
  const archived=savePacket(true);
+ renderInvoiceActions();
  toast(archived?'Invoice closed and saved. Final receipt unlocked.':'Invoice closed in this session; save a backup.');
  if(receiptsUnlocked())setDeskSection('receipts',true);
 }
@@ -447,6 +467,7 @@ function reopenInvoice(){
  state.closedAt='';
  renderReport();renderPaymentCenter();setDeskSection('overview');
  const archived=savePacket(true);
+ renderInvoiceActions();
  toast(archived?'Invoice reopened and archive updated.':'Invoice reopened in session; save a backup.');
 }
 function receiptMarkup(p){
