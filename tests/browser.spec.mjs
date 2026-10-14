@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 
 test('guided invoice, payment deduplication, closeout and PDF receipt',async({page})=>{
  page.on('dialog',dialog=>dialog.accept());
- await page.goto('/');
+ await page.goto('./');
  await expect(page.locator('#screen-home')).toHaveClass(/active/);
  // The bottom navigation must not bypass required invoice details.
  await page.locator('#bottomNav [data-switch="preview"]').click();
@@ -54,7 +54,7 @@ test('guided invoice, payment deduplication, closeout and PDF receipt',async({pa
 });
 
 test('navigation retains unfinished invoice entry and shows useful empty archive',async({page})=>{
- await page.goto('/');
+ await page.goto('./');
  await page.locator('#bottomNav [data-switch="build"]').click();
  await page.locator('#customer').fill('Draft customer test');
  await page.locator('#total').fill('125.00');
@@ -68,7 +68,7 @@ test('navigation retains unfinished invoice entry and shows useful empty archive
 
 test('static shell and a draft stay usable after going offline',async({page,context},testInfo)=>{
  test.skip(testInfo.project.name!=='chromium-mobile','Offline cache smoke check currently runs in Chromium');
- await page.goto('/');
+ await page.goto('./');
  const ready=await page.evaluate(async()=>{
   if(!('serviceWorker'in navigator))return false;
   await navigator.serviceWorker.ready;return true;
