@@ -11,7 +11,8 @@ const money=v=>'$'+((Math.round(Number(String(v||'0').replace(/[$,]/g,''))*100)|
 const cents=v=>Math.max(0,Math.round((Number(String(v||0).replace(/[$,]/g,''))||0)*100));
 const csvCell=v=>'"'+String(v??'').replace(/"/g,'""').replace(/^[=+\-@\t\r]/,"'$&")+'"';
 const csv=rows=>'\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n';
-const availableMonths=records=>[...new Set(records.flatMap(r=>[monthKey(r.date||r.savedAt),...(r.payments||[]).filter(p=>!p.voidedAt).map(p=>monthKey(p.date))]).filter(Boolean))].sort().reverse();
+const fileReady=r=>Boolean(r&&r.company&&r.customer&&cents(r.total)>0&&(r.preparedAt||(r.workflowVersion!==2&&(r.id||r.archiveId))));
+const availableMonths=records=>[...new Set(records.filter(fileReady).flatMap(r=>[monthKey(r.date||r.savedAt),...(r.payments||[]).filter(p=>!p.voidedAt).map(p=>monthKey(p.date))]).filter(Boolean))].sort().reverse();
 const makePdfFromCanvas=canvas=>{
  const jpg64=canvas.toDataURL('image/jpeg',.83);
  if(!jpg64.startsWith('data:image/jpeg;base64,'))throw new Error('Invoice PDF image encoding failed.');
@@ -121,7 +122,7 @@ async function buildPackage(records,scope,receiptPdf,progress=()=>{}){
  const copies=records.map(r=>typeof structuredClone==='function'?structuredClone(r):JSON.parse(JSON.stringify(r)));
  const months=availableMonths(copies);
  if(scope!=='all'&&!months.includes(scope))throw Error('That month has no saved records.');
- const selected=copies.filter(r=>scope==='all'||monthKey(r.date||r.savedAt)===scope||(r.payments||[]).some(p=>!p.voidedAt&&monthKey(p.date)===scope));
+ const selected=copies.filter(r=>fileReady(r)&&(scope==='all'||monthKey(r.date||r.savedAt)===scope||(r.payments||[]).some(p=>!p.voidedAt&&monthKey(p.date)===scope)));
  if(!selected.length)throw Error('No locally saved invoices are available.');
  if(selected.length>180)throw Error('Too many invoices for one export; select a month.');
  const root='Packet-Lily-Records/',files=[];
