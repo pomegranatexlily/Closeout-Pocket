@@ -244,7 +244,18 @@ function clearBusinessSettings(){
  try{localStorage.removeItem(K_BUSINESS);localStorage.removeItem(K_PAYMENT_ACCOUNT)}catch(e){toast('Could not remove the business profile.');return}
  businessProfile=businessFrom({});defaultCashAppLink='';renderBusinessSettings();toast('Saved business profile cleared. Existing invoices are unchanged.');
 }
-function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=total-paid;$('#liveTotal').textContent=fmt(total);$('#livePaid').textContent=fmt(paid);$('#balanceLabel').textContent=bal>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(bal));const prior=$('#paid');if(prior)prior.value=fmt(paid)}
+function renderRequiredSteps(){
+ const checks=[['business',Boolean(state.company?.trim()),'Business profile'],['customer',Boolean(state.customer?.trim()),'Customer'],['amount',cents(state.total)>0,'Invoice amount']];
+ let done=0;
+ for(const [key,valid,label] of checks){
+  const el=document.querySelector('[data-required-check="'+key+'"]');
+  if(el){el.textContent=(valid?'✓ ':'○ ')+label;el.dataset.done=valid?'true':'false'}
+  if(valid)done++;
+ }
+ const progress=$('#requiredProgress');
+ if(progress)progress.textContent=done+' / 3 ready';
+}
+function renderBalance(){const total=num(state.total),paid=num(state.paid),bal=total-paid;$('#liveTotal').textContent=fmt(total);$('#livePaid').textContent=fmt(paid);$('#balanceLabel').textContent=bal>=0?'Balance due':'Customer credit';$('#liveBalance').textContent=fmt(Math.abs(bal));renderRequiredSteps();const prior=$('#paid');if(prior)prior.value=fmt(paid)}
 function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs').innerHTML=state.photos[kind].map((item,i)=>`<div class="thumb"><img src="${safe(item.data)}" alt="${kind} photo ${i+1}"><button type="button" data-remove-photo="${kind}:${i}" aria-label="Remove ${kind} photo ${i+1}">×</button></div>`).join('')}}
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
 function cashAppUrl(){
