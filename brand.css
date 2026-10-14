@@ -429,3 +429,8 @@ input,textarea,select{scroll-margin-top:75px;scroll-margin-bottom:calc(125px + e
 /* Cash App reusable profile does not use exact amount confirmation. */
 .confirm-request[hidden]{display:none!important}
 #paymentLinkStatus{line-height:1.55;max-width:580px;overflow-wrap:anywhere}
+
+
+.sample-invoice-warning{background:#fff8e9;border:1px solid #efdab2;color:#6b481c;padding:12px 15px;border-radius:12px;font-size:12px;line-height:1.6;margin:12px 0}
+.sample-invoice-warning strong{color:#5a3a12}
+.sample-invoice-warning[hidden]{display:none!important}
