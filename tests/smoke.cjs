@@ -20,7 +20,7 @@ const seam='loadForm();nav();renderStorageChoice();';
 assert(script.includes(seam));
 const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,setDeskSection,makeReceiptPdf,receiptPdfFilename,receiptText,invoiceStage,receiptsUnlocked,renderSaved,printCustomerInvoice,printReceipt,customerInvoicePdf,customerInvoicePdfName,offerPrintPdf};');
 const events={},els=new Map();
-function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){},setAttribute(name,value){this[name]=value}});return els.get(key)}
+function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,style:{},innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){},setAttribute(name,value){this[name]=value}});return els.get(key)}
 const screens=['home','build','preview','saved','business'].map(name=>({id:'screen-'+name,active:name==='home',classList:{toggle(flag,on){if(flag==='active')this.owner.active=on},owner:null}}));
 for(const screen of screens)screen.classList.owner=screen;
 const canvasContext={
