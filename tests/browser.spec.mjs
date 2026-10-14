@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
 test('app initializes its JavaScript navigation on both mobile engines',async({page},testInfo)=>{
  const errors=[],failedRequests=[];
  page.on('pageerror',error=>errors.push(String(error)));
@@ -24,6 +25,25 @@ test('Cash App profile explains manual amount and exact request checkbox only ap
  await page.locator('#confirmPaymentAmount').check();
  await expect(page.locator('#confirmPaymentAmount')).toBeChecked();
 });
+test('Save Report generates a real multipage PDF without HTML',async({page},testInfo)=>{
+ test.skip(testInfo.project.name!=='chromium-mobile','PDF file inspection runs in Chromium');
+ await page.goto('./');
+ await page.locator('#bottomNav [data-switch="build"]').click();
+ await page.locator('#demoBtn').click();
+ await page.locator('#previewBtn').click();
+ await expect(page.locator('#screen-preview')).toHaveClass(/active/);
+ const [download]=await Promise.all([
+  page.waitForEvent('download'),
+  page.locator('#savePacketFileBtn').click()
+ ]);
+ expect(download.suggestedFilename()).toMatch(/\\.pdf$/i);
+ const pdf=await readFile(await download.path());
+ const content=pdf.toString('latin1');
+ expect(content.startsWith('%PDF-1.4')).toBe(true);
+ expect(content).toMatch(/\\/Type \\/Pages \\/Count [2-9]/);
+ expect(content).not.toContain('<!doctype html>');
+});
+
 test('Sample business is labeled before a test invoice can accidentally be sent',async({page})=>{
  await page.goto('./');
  await page.locator('#bottomNav [data-switch="build"]').click();
@@ -84,6 +104,10 @@ test('guided invoice, payment deduplication, closeout and PDF receipt',async({pa
  await page.locator('#bottomNav [data-switch="saved"]').click();
  await expect(page.locator('#paidCount')).toHaveText('1');
  await expect(page.locator('#unpaidCount')).toHaveText('0');
+ // Reload must not erase or silently migrate the existing invoice ledger.
+ await page.reload();
+ await page.locator('#bottomNav [data-switch="saved"]').click();
+ await expect(page.locator('#paidCount')).toHaveText('1');
 });
 
 test('navigation retains unfinished invoice entry and shows useful empty archive',async({page})=>{
@@ -113,5 +137,9 @@ test('static shell and a draft stay usable after going offline',async({page,cont
  await expect(page.locator('#connectivityBadge')).toContainText('Offline');
  await page.locator('#bottomNav [data-switch="build"]').click();
  await page.locator('#customer').fill('Offline local draft');
+ await expect(page.locator('#customer')).toHaveValue('Offline local draft');
+ if(await page.locator('#deviceSaveNotice').isVisible())await page.locator('#enableDeviceSaveBtn').click();
+ await page.reload({waitUntil:'domcontentloaded',timeout:20000});
+ await page.locator('#bottomNav [data-switch="build"]').click();
  await expect(page.locator('#customer')).toHaveValue('Offline local draft');
 });

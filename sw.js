@@ -1,5 +1,5 @@
 /* Packet Lily: cache only public app shell. Never cache customer data, exports or remote content. */
-const CACHE='packet-lily-shell-v4.0';
+const CACHE='packet-lily-shell-v4.0.1';
 const ROOT='/Closeout-Pocket/';
 const ASSETS=[ROOT,ROOT+'index.html',ROOT+'app.js',ROOT+'filing.js',ROOT+'brand.css',ROOT+'icon.svg',ROOT+'apple-touch-icon.png',ROOT+'privacy.html',ROOT+'manifest.webmanifest'];
 self.addEventListener('install',event=>{

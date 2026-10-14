@@ -11,6 +11,14 @@ http.createServer((req,res)=>{
  fs.readFile(file,(err,data)=>{
   if(err){res.writeHead(404);return res.end()}
   res.writeHead(200,{'Content-Type':mime[path.extname(name)]||'application/octet-stream','Cache-Control':'no-store'});
-  if(req.method==='HEAD')return res.end();res.end(data)
+  if(req.method==='HEAD')return res.end();
+  // Production GitHub Pages uses HTTPS. WebKit upgrades local HTTP scripts to
+  // HTTPS when the HTML's upgrade-insecure-requests meta directive is present.
+  // This local-only response adjustment retains every other CSP restriction.
+  // Never edit the production index.html to work around an HTTP test fixture.
+  const body=name==='index.html'
+    ?Buffer.from(data.toString('utf8').replace('; upgrade-insecure-requests',''))
+    :data;
+  res.end(body);
  });
 }).listen(port,'127.0.0.1',()=>console.log('Packet Lily browser-test site at http://127.0.0.1:'+port+prefix));
