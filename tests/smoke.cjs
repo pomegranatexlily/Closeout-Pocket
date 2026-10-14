@@ -18,7 +18,7 @@ assert(!/document\.cookie\s*=|https?:\/\/(google-analytics|www\.googletagmanager
 new Function(script);new Function(filingScript);
 const seam='loadForm();nav();renderStorageChoice();';
 assert(script.includes(seam));
-const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,setDeskSection,makeReceiptPdf,receiptPdfFilename,receiptText};');
+const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,setDeskSection,makeReceiptPdf,receiptPdfFilename,receiptText,printCustomerInvoice,printReceipt,customerInvoicePdf,customerInvoicePdfName,offerPrintPdf};');
 const events={},els=new Map();
 function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){},setAttribute(name,value){this[name]=value}});return els.get(key)}
 const screens=['home','build','preview','saved','business'].map(name=>({id:'screen-'+name,active:name==='home',classList:{toggle(flag,on){if(flag==='active')this.owner.active=on},owner:null}}));
@@ -30,8 +30,8 @@ const canvasContext={
 const fakeCanvas={width:0,height:0,getContext:()=>canvasContext,toDataURL:()=> 'data:image/jpeg;base64,/9j/2Q=='};
 const doc={querySelector:element,querySelectorAll:selector=>selector==='.screen'?screens:[],addEventListener:(event,handler)=>events[event]=handler,createElement:tag=>tag==='canvas'?fakeCanvas:{click(){},remove(){}},body:{appendChild(){},classList:{add(){},remove(){}}}};
 const data=new Map(),localStorage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
-const win={scrollTo(){},location:{href:''},isSecureContext:false,addEventListener(){},print(){}};
-const navigator={share:async()=>{},clipboard:{writeText:async()=>{}}};
+let desktopPrintCount=0;const win={scrollTo(){},location:{href:''},isSecureContext:false,addEventListener(){},print(){desktopPrintCount++}};
+const navigator={userAgent:'Desktop Test',share:async()=>{},clipboard:{writeText:async()=>{}}};
 new Function('window','document','Blob','TextEncoder','atob',filingScript)(win,doc,Blob,TextEncoder,atob);
 assert(win.PacketLilyArchive,'filing module must expose local archive builder');
 const app=new Function('document','window','localStorage','navigator','URL','Blob','confirm','alert','console','setTimeout','clearTimeout','return '+source)(doc,win,localStorage,navigator,URL,Blob,()=>true,()=>{},console,()=>0,()=>{});
@@ -123,6 +123,33 @@ state.payments[0].note='PRIVATE NOT FOR CUSTOMER';
 app.renderPaymentCenter();
 assert(!element('#receiptDocument').innerHTML.includes('PRIVATE NOT FOR CUSTOMER'),'internal payment note must never appear on receipt');
 assert(!app.receiptText(state.payments[0]).includes('PRIVATE NOT FOR CUSTOMER'),'shared receipt must exclude private note');
+
+assert(index.includes('Save / Print invoice PDF'),'invoice print button must explain PDF workflow');
+assert(index.includes('id="printReceiptBtn">Print PDF'),'receipt print button must explain PDF workflow');
+assert(app.customerInvoicePdfName().endsWith('.pdf'));
+assert.equal(app.customerInvoicePdf().type,'application/pdf','iPhone print must produce actual invoice PDF');
+navigator.userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X)';
+let mobileShareCount=0;
+navigator.canShare=({files})=>Array.isArray(files)&&files.length===1&&files[0].type==='application/pdf';
+navigator.share=async function({files}){
+ assert.equal(files.length,1);
+ assert.equal(files[0].type,'application/pdf');
+ assert(files[0].name.endsWith('.pdf'));
+ mobileShareCount++;
+};
+app.printCustomerInvoice().then(result=>{
+ assert.equal(result,'shared','iPhone customer invoice print uses PDF share sheet');
+ assert.equal(mobileShareCount>=1,true);
+ assert.equal(desktopPrintCount,0,'iPhone must not call unsupported window.print');
+ console.log('iPhone invoice PDF print fallback passed.');
+}).catch(e=>{console.error(e);process.exitCode=1});
+app.printReceipt().then(result=>{
+ assert.equal(result,'shared','iPhone receipt print uses PDF share sheet');
+ assert.equal(mobileShareCount>=2,true);
+ assert.equal(desktopPrintCount,0,'iPhone receipt print must not call window.print');
+ console.log('iPhone receipt PDF print fallback passed.');
+}).catch(e=>{console.error(e);process.exitCode=1});
+
 const pdf=app.makeReceiptPdf(state.payments[0]);
 assert.equal(pdf.type,'application/pdf','receipt download must be a genuine PDF Blob');
 assert(app.receiptPdfFilename(state.payments[0]).endsWith('.pdf'),'receipt filename must end in PDF');
