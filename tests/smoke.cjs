@@ -175,6 +175,19 @@ win.PacketLilyArchive.buildPackage(app.getSaved(),'all',app.makeReceiptPdf).then
  assert(end>0&&buf.readUInt32LE(end)===0x06054b50,'ZIP end record missing');
  const count=buf.readUInt16LE(end+10);
  assert.equal(count,output.files,'ZIP central directory entry count must match');
+ const centralStart=buf.readUInt32LE(end+16);
+ let pos=0,entryCount=0;
+ while(pos<centralStart){
+  assert.equal(buf.readUInt32LE(pos),0x04034b50,'corrupt ZIP entry header');
+  const storedLen=buf.readUInt32LE(pos+18),nameLen=buf.readUInt16LE(pos+26),extraLen=buf.readUInt16LE(pos+28);
+  const first=pos+30+nameLen+extraLen,last=first+storedLen;
+  assert(last<=centralStart,'ZIP entry escaped the local-file region');
+  let crc=0xffffffff;
+  for(const b of buf.subarray(first,last)){crc^=b;for(let k=0;k<8;k++)crc=(crc&1)?(crc>>>1)^0xedb88320:(crc>>>1)}
+  assert.equal((crc^0xffffffff)>>>0,buf.readUInt32LE(pos+14),'ZIP entry CRC mismatch');
+  pos=last;entryCount++;
+ }
+ assert.equal(entryCount,count,'ZIP archive entries must align with central directory');
  const contents=buf.toString('latin1');
  assert(contents.includes('Packet-Lily-Records/2026/10-October/Invoices/Invoice-'),'invoice PDFs are filed by year/month');
  assert(contents.includes('/Receipts/Receipt-'),'payment receipts are filed separately');
