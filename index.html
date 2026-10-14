@@ -85,6 +85,17 @@
 .confirm-request{display:flex;align-items:flex-start;gap:9px;font-weight:650;font-size:12px;line-height:1.45;cursor:pointer;margin-top:6px;color:#24463d}
 .confirm-request input{flex:none;width:19px!important;height:19px!important;min-height:0!important;margin:0;accent-color:#137266}
 #paymentLinkStatus{font-size:11px;font-weight:650;display:block;margin-top:5px}
+.quick-invoice-layout{max-width:990px;margin:auto}.quick-invoice-card{max-width:660px;margin:0 auto 18px}
+.quick-invoice-card .field label{font-size:13px}.quick-invoice-card .field input{font-size:18px;min-height:52px}
+.optional-details{border:1px solid #d9e6e3;border-radius:14px;background:white;margin-top:17px;overflow:hidden}
+.optional-details>summary{padding:18px 22px;cursor:pointer;font-weight:800;color:#213d3e}
+.optional-details>summary span{font-weight:500;font-size:12px;color:#6e8586;margin-left:9px}
+.optional-details[open]>summary{border-bottom:1px solid #d9e6e3}
+.extras-content{padding:18px;display:grid;gap:18px}.business-settings{max-width:820px}
+.business-settings #defaultCashStatus{display:block;margin-top:12px;color:#486d64;font-size:11px}
+.more-actions{justify-content:center;margin-top:12px}
+@media(max-width:680px){.extras-content{padding:12px}.optional-details>summary span{display:block;margin:7px 0 0}.bottomnav button{width:24%!important}}
+
 .payment-default-panel{border:1px solid #d0e3dd;background:#f5faf8;border-radius:12px;padding:15px;margin-bottom:18px}
 .payment-default-panel h4{font-size:13px;margin:0 0 6px;color:#184f45}
 .payment-default-panel .help{margin:0 0 12px}
@@ -99,20 +110,26 @@
 <body>
 <div class="app">
 <aside class="sidebar" aria-label="Main navigation"><div class="brand"><span class="brand-mark"><b>✓</b></span><div><div class="brand-name">Closeout<br>Pocket.</div><div class="brand-sub">Pomegranate × Lily</div></div></div><div><div class="side-title">Workspace</div><nav class="nav" id="sideNav"></nav></div><div class="sidebar-bottom"><strong><span class="status-dot"></span>Local workspace</strong><p>Browser-local archive. Email opens a mail draft; it does not send automatically. Export backups regularly.</p></div></aside>
-<main class="main"><header class="topbar"><div class="crumb">Workspace <span aria-hidden="true"> / </span> <strong id="crumb">Build packet</strong></div><div class="top-actions"><span class="tiny-pill">● &nbsp; On-device workspace</span><span class="avatar" title="Pomegranate × Lily">P</span></div></header>
-<section class="hero"><div><div class="overline">Built for work that speaks for itself</div><h1>Finish the job.<br>Show the proof.</h1><p>Turn job notes, before-and-after photos, and payment details into a professional customer-ready completion packet.</p></div><div class="hero-art" aria-hidden="true"><span></span><span></span><span></span><b>✓</b></div></section>
+<main class="main"><header class="topbar"><div class="crumb">Workspace <span aria-hidden="true"> / </span> <strong id="crumb">New invoice</strong></div><div class="top-actions"><span class="tiny-pill">● &nbsp; On-device workspace</span><span class="avatar" title="Pomegranate × Lily">P</span></div></header>
+<section class="hero"><div><div class="overline">Built for work that speaks for itself</div><h1>Finish the job.<br>Send the invoice.</h1><p>Invoice in seconds using saved business details. Add proof of work when you need it.</p></div><div class="hero-art" aria-hidden="true"><span></span><span></span><span></span><b>✓</b></div></section>
 <div id="screen-build" class="screen active">
 <section class="privacy-notice" id="deviceSaveNotice" hidden><strong>Your invoices stay on this device</strong><p>Choose whether Closeout Pocket can save drafts, photos, and invoices in this browser. No cookies or third-party tracking are used. Local storage is not an encrypted cloud backup.</p><div class="action-bar"><button class="btn primary small" type="button" id="enableDeviceSaveBtn">Enable local saving</button><button class="btn small" type="button" id="sessionOnlyBtn">Use without saving</button></div></section>
-<div class="section-title"><div><h2>Build a Job Packet</h2><p>Everything your customer needs to see, in one document.</p></div><span class="mini-tag">01 — 04</span></div>
-<div class="grid"><div class="stack">
-<section class="card"><div class="card-head"><span class="card-num">01</span><div><h3>Who did the work?</h3><p>Your business and your customer</p></div></div><div class="field-grid">
-<div class="field span"><label for="company">Your business name</label><input id="company" data-field="company" placeholder="e.g. Northside Home Services"></div>
-<div class="field"><label for="phone">Business phone</label><input id="phone" data-field="phone" inputmode="tel" placeholder="(555) 010-1234"></div>
-<div class="field"><label for="companyEmail">Business email</label><input id="companyEmail" data-field="companyEmail" type="email" placeholder="hello@business.com"></div>
-<div class="field"><label for="customer">Customer name</label><input id="customer" data-field="customer" placeholder="e.g. Jordan Lee"></div>
-<div class="field"><label for="customerEmail">Customer email</label><input id="customerEmail" data-field="customerEmail" type="email" placeholder="customer@email.com"></div>
-</div></section>
-<section class="card"><div class="card-head"><span class="card-num">02</span><div><h3>Job information</h3><p>What happened and where</p></div></div><div class="field-grid">
+
+<div class="section-title"><div><h2>New invoice</h2><p>Customer and amount first. Your business information is already saved.</p></div><button type="button" class="btn small" data-switch="business">My Business</button></div>
+<div class="quick-invoice-layout">
+<section class="card quick-invoice-card">
+<div class="card-head"><span class="card-num">01</span><div><h3>Quick invoice</h3><p id="businessOnInvoice">Your business details are loaded automatically.</p></div></div>
+<div class="field-grid">
+<div class="field span"><label for="customer">Customer name</label><input id="customer" data-field="customer" autocomplete="name" placeholder="Customer name"></div>
+<div class="field span"><label for="total">Invoice amount ($)</label><input id="total" data-field="total" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div>
+</div>
+<div class="summary-strip"><div class="sum-row"><span>Invoice total</span><strong id="liveTotal">$0.00</strong></div><div class="sum-row"><span>Payments received</span><strong id="livePaid">$0.00</strong></div><div class="sum-row total"><span id="balanceLabel">Balance due</span><strong id="liveBalance">$0.00</strong></div></div>
+<div class="action-bar"><button class="btn primary" id="previewBtn">Generate invoice →</button><button class="btn" id="saveBtn">Save to archive</button><button class="btn small" id="blankBtn">New invoice</button></div>
+<p class="help">Only mark money paid when you actually receive it. Cash App payments are recorded manually.</p>
+</section>
+<details class="optional-details" id="invoiceExtras"><summary>More details <span>Email, service description, photos &amp; payments</span></summary><div class="extras-content">
+<section class="card"><h3>Customer contact</h3><div class="field" style="margin-top:12px"><label for="customerEmail">Customer email (optional)</label><input id="customerEmail" data-field="customerEmail" type="email" autocomplete="email" placeholder="customer@email.com"></div></section>
+<div class="grid"><div class="stack"><section class="card"><div class="card-head"><span class="card-num">02</span><div><h3>Job information</h3><p>What happened and where</p></div></div><div class="field-grid">
 <div class="field span"><label for="job">Job title</label><input id="job" data-field="job" placeholder="e.g. Kitchen faucet repair"></div>
 <div class="field span"><label for="address">Street address</label><input id="address" data-field="address" autocomplete="street-address" placeholder="218 Oak View Drive"></div>
 <div class="field city-field"><label for="city">City</label><input id="city" data-field="city" autocomplete="address-level2" placeholder="Dallas"></div>
@@ -122,20 +139,29 @@
 <div class="field span"><label for="ref">Job / invoice number</label><input id="ref" data-field="ref" placeholder="e.g. JP-1001"></div>
 <div class="field span"><label for="summary">Short job summary</label><textarea id="summary" data-field="summary" rows="3" placeholder="What was the customer asking you to complete?"></textarea></div>
 <div class="field span"><label for="work">Work completed</label><textarea id="work" data-field="work" rows="5" placeholder="List the completed work, parts installed, cleanup, and final result."></textarea></div>
-</div></section>
-</div><div class="stack">
-<section class="card"><div class="card-head"><span class="card-num">03</span><div><h3>Photo evidence</h3><p>Document completed work</p></div></div><div class="photo-grid"><div><label for="beforeFiles" class="upload-area"><span class="upload-icon">＋</span><strong>Add before photos</strong><span>Choose up to 4 photos</span></label><input id="beforeFiles" type="file" accept="image/*" multiple hidden><div class="thumbs" id="beforeThumbs"></div></div><div><label for="afterFiles" class="upload-area"><span class="upload-icon">＋</span><strong>Add after photos</strong><span>Choose up to 4 photos</span></label><input id="afterFiles" type="file" accept="image/*" multiple hidden><div class="thumbs" id="afterThumbs"></div></div></div><p class="help">Photos are resized to keep packets lightweight. Photos stay in this browser unless you share or export them.</p></section>
+</div></section></div><div class="stack"><section class="card"><div class="card-head"><span class="card-num">03</span><div><h3>Photo evidence</h3><p>Document completed work</p></div></div><div class="photo-grid"><div><label for="beforeFiles" class="upload-area"><span class="upload-icon">＋</span><strong>Add before photos</strong><span>Choose up to 4 photos</span></label><input id="beforeFiles" type="file" accept="image/*" multiple hidden><div class="thumbs" id="beforeThumbs"></div></div><div><label for="afterFiles" class="upload-area"><span class="upload-icon">＋</span><strong>Add after photos</strong><span>Choose up to 4 photos</span></label><input id="afterFiles" type="file" accept="image/*" multiple hidden><div class="thumbs" id="afterThumbs"></div></div></div><p class="help">Photos are resized to keep packets lightweight. Photos stay in this browser unless you share or export them.</p></section>
 <section class="card payment-card"><div class="card-head"><span class="card-num">04</span><div><h3>Payment details</h3><p>Track only money actually received</p></div></div>
-<div class="payment-default-panel"><h4>Saved Cash App account</h4><p class="help">Set your receiving profile once. Every new invoice can use it without copying your link again. Exact-amount requests still need a fresh Cash App request for each balance.</p>
-<div class="field"><label for="defaultCashApp">Your $cashtag or profile link</label><input id="defaultCashApp" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="$YourCashtag or https://cash.app/$YourCashtag"></div>
-<div class="action-bar"><button type="button" class="btn primary small" id="saveDefaultCashBtn">Save for future invoices</button><button type="button" class="btn small" id="useDefaultCashBtn">Use on this invoice</button><button type="button" class="btn danger small" id="removeDefaultCashBtn">Remove saved account</button></div>
-<small id="defaultCashStatus" role="status" aria-live="polite"></small></div>
-<div class="field-grid payment-fields"><div class="field"><label for="total">Job total ($)</label><input id="total" data-field="total" type="text" inputmode="decimal" autocomplete="off" placeholder="$250.00" aria-describedby="moneyHelp"></div>
-<div class="field"><label for="paid">Amount paid ($)</label><input id="paid" data-field="paid" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div><div class="field span"><label for="due">Payment due date (optional)</label><input id="due" type="date" data-field="due"></div>
+<div class="field-grid payment-fields"><div class="field"><label for="paid">Amount paid ($)</label><input id="paid" data-field="paid" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div><div class="field span"><label for="due">Payment due date (optional)</label><input id="due" type="date" data-field="due"></div>
 <div class="field span"><label for="paymentLink">Payment link for this invoice</label><input id="paymentLink" data-field="paymentLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://cash.app/…"><small>For the exact amount: Cash App → Request → enter balance due → add invoice reference → Share link → paste here. Your saved $cashtag profile works on any new invoice but does not prefill the amount.</small><label class="confirm-request" for="confirmPaymentAmount"><input type="checkbox" id="confirmPaymentAmount"> I created this Cash App request for the exact amount due</label><button type="button" class="btn small" id="copyCashRequestBtn">Copy exact amount &amp; invoice note</button><small id="paymentLinkStatus" role="status" aria-live="polite"></small></div><div class="field span"><label for="notes">Final notes (optional)</label><textarea id="notes" rows="3" data-field="notes" placeholder="Warranty, instructions, next steps, or thank-you note"></textarea></div></div><p class="help" id="moneyHelp">Amounts format automatically. Enter $0.00 under Payments received until the customer actually pays. Never enter card or banking credentials.</p>
-<div class="summary-strip"><div class="sum-row"><span>Job total</span><strong id="liveTotal">$0.00</strong></div><div class="sum-row"><span>Payments received</span><strong id="livePaid">$0.00</strong></div><div class="sum-row total"><span id="balanceLabel">Balance due</span><strong id="liveBalance">$0.00</strong></div></div></section>
-<section class="card"><h3>Ready to close it out?</h3><p class="help">Enter a job, review the balance, then generate and share.</p><div class="action-bar"><button class="btn primary" id="previewBtn">Generate &amp; view packet →</button><button class="btn" id="saveBtn">Save to archive</button><button class="btn" id="blankBtn">New blank</button><button class="btn small" id="demoBtn">Load sample</button></div></section>
-</div></div></div>
+</section>
+</div></div>
+</div></details>
+<div class="action-bar more-actions"><button type="button" class="btn small" id="demoBtn">Load sample for testing</button></div>
+</div></div>
+<section id="screen-business" class="screen">
+<div class="section-title"><div><h2>My Business</h2><p>Enter these details once for every new invoice.</p></div></div>
+<section class="card business-settings">
+<div class="card-head"><span class="card-num">✓</span><div><h3>Business profile</h3><p>Shown as the sender on future invoices.</p></div></div>
+<div class="field-grid">
+<div class="field span"><label for="businessName">Business name</label><input id="businessName" maxlength="300" autocomplete="organization" placeholder="Your business name"></div>
+<div class="field"><label for="businessPhone">Business phone (optional)</label><input id="businessPhone" type="tel" autocomplete="tel" placeholder="Phone number"></div>
+<div class="field"><label for="businessEmail">Business email (optional)</label><input id="businessEmail" type="email" autocomplete="email" placeholder="email@business.com"></div>
+<div class="field span"><label for="defaultCashApp">Cash App receiving account (optional)</label><input id="defaultCashApp" autocomplete="off" spellcheck="false" placeholder="$YourCashtag or https://cash.app/$YourCashtag"><small>Use a reusable Cash App profile, not an amount-specific request. Customers enter the amount manually when paying by profile link.</small></div>
+</div>
+<small id="defaultCashStatus" role="status" aria-live="polite"></small>
+<div class="action-bar"><button class="btn primary" id="saveBusinessBtn">Save business details</button><button class="btn" id="applyBusinessBtn">Apply to current invoice</button><button class="btn small" data-switch="build">New invoice →</button></div>
+<p class="help">Business details are saved on this device, not the cloud. Updating them never silently changes existing archived invoices.</p>
+</section></section>
 <section id="screen-preview" class="screen">
 <div class="generation-banner" id="generationBanner" role="status" aria-live="polite" hidden>
   <span class="generation-mark" aria-hidden="true">✓</span>
@@ -151,7 +177,7 @@
 <div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Share payment request sends invoice details and a Cash App link as message text. Email invoice opens a draft; you still tap Send. Use Share report file when photos need to accompany the invoice. Payments must be confirmed and recorded manually.</p></section>
 <section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-switch="build">+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
 <section class="privacy-notice" id="privacySettings"><h3>Privacy &amp; device storage</h3><p id="storageStateText"></p><div class="action-bar"><button type="button" class="btn small" id="toggleDeviceSaveBtn">Change saving preference</button><button type="button" class="btn danger small" id="eraseDeviceBtn">Erase all local invoices and drafts</button><a class="btn small" href="privacy.html">Privacy details</a></div><p class="help">No analytics, advertising trackers, or nonessential cookies are used. Your archive is not a secure multi-device business database.</p></section><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Closeout Pocket · Pomegranate × Lily · v1.8 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<p class="copyright">Closeout Pocket · Pomegranate × Lily · v1.9 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="app.js" defer></script>
