@@ -243,3 +243,31 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-vi
 }
 
 @media print{body:not(.print-receipt) .payment-center{display:none!important}}
+
+
+/* Packet Lily v3.3 — strict contractor/customer surface separation. */
+.audience-switcher{max-width:1030px;margin:0 auto 17px;border:1px solid #e1d4ec;background:#fff;border-radius:18px;padding:18px 20px;box-shadow:0 8px 23px #2916340a}
+.audience-switcher-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px}
+.audience-switcher-head strong{font-size:15px;color:#30203f;letter-spacing:-.3px}
+.audience-switcher-head span{font-size:9px;color:#897b96;font-weight:850;letter-spacing:1.3px}
+.audience-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;background:#f3edf9;padding:5px;border-radius:13px}
+.audience-option{padding:12px;border:1px solid transparent;border-radius:10px;background:transparent;color:#786688;font-weight:830;font-size:12px;min-height:44px}
+.audience-option.active{background:#5c3991;color:#fff;box-shadow:0 3px 12px #3520472b}
+.audience-switcher p{margin:12px 0 0;font-size:11px;color:#756982;line-height:1.6}
+.customer-preview-notice{max-width:830px;margin:0 auto 16px;padding:18px 20px;border:1px solid #dccded;border-radius:15px;background:#f6f0fd;color:#50336e}
+.customer-preview-notice[hidden],.payment-center[hidden]{display:none!important}
+.customer-preview-notice strong{font-size:13px;display:block}
+.customer-preview-notice p{font-size:11px;line-height:1.65;color:#766184;margin:9px 0 12px}
+.customer-mode .generation-banner,.customer-mode .preview-toolbar{display:none!important}
+.customer-mode .report{margin-top:6px}
+.report .r-payment-link .pay-preview{display:block;max-width:360px;text-align:center;text-decoration:none;background:#6f5591;color:#fff;border-radius:10px;font-size:14px;font-weight:800;padding:14px 16px;overflow-wrap:anywhere;opacity:.68;cursor:not-allowed;user-select:none}
+@media(max-width:680px){
+ .audience-switcher{padding:14px 13px;border-radius:15px}
+ .audience-switcher-head{display:block}
+ .audience-switcher-head span{display:block;margin-top:5px}
+ .audience-option{font-size:12px;padding:12px 9px}
+ .customer-preview-notice{padding:15px}
+}
+@media print{
+ .audience-switcher,.customer-preview-notice{display:none!important}
+}
