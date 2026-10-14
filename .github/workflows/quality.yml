@@ -18,5 +18,8 @@ jobs:
         run: |
           node --check app.js
           node --check sw.js
+          node --check filing.js
+          node --check tests/serve.cjs
+          node --check tests/browser.spec.mjs
       - name: Run no-dependency smoke tests
         run: node tests/smoke.cjs
