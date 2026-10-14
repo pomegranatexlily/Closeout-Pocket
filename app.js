@@ -807,21 +807,13 @@ function emailInvoice(){
  toast('Opening email draft. Review and tap Send.');
  window.location.href='mailto:'+recipient+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 }
-function reportFile(){
-  // Creates the customer's complete report as an independent, portable HTML file.
-  const content=reportMarkup('customer-export');
-  if(!content || !content.includes('report-body'))throw new Error('The customer invoice could not be rendered.');
-  const css=$('style').textContent;
-  const title=(state.ref||state.job||'job-packet').replace(/[^a-z0-9_-]+/gi,'-').replace(/-+$/,'').slice(0,60)||'job-packet';
-  const doc=`<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
-<title>${safe(title)} — Job Packet</title><style>${css}
-body{background:#f4f7f6;padding:26px 12px}.report{margin:0 auto}@media print{body{padding:0}}
-</style></head><body><article class="report">${content}</article>
-<footer style="max-width:830px;margin:14px auto;text-align:center;font:12px/1.6 system-ui;color:#697785">
-Customer copy · Prepared with Packet Lily. For PDF, use your browser’s Print / Save as PDF command.
-</footer></body></html>`;
-  return {name:title+'.html',blob:new Blob([doc],{type:'text/html;charset=utf-8'})};
+async function reportFile(){
+ if(!invoicePrepared())throw Error('Generate the invoice before exporting its customer document.');
+ if(!window.PacketLilyArchive?.makeReportPdf)throw Error('PDF report generator is unavailable.');
+ const title=String(state.ref||state.job||'job-packet').replace(/[^a-z0-9_-]+/gi,'-').replace(/-+$/,'').slice(0,60)||'job-packet';
+ const blob=await window.PacketLilyArchive.makeReportPdf(clone(state));
+ if(blob.type!=='application/pdf')throw Error('Report is not a PDF.');
+ return {name:'Packet-Lily-Job-Packet-'+title+'.pdf',blob};
 }
 function embeddedMobilePrint(){
  const ua=String(navigator.userAgent||'');
@@ -858,7 +850,7 @@ function customerInvoicePdfName(){
 async function printCustomerInvoice(){
  if(embeddedMobilePrint()||typeof window.print!=='function'){
   try{return await offerPrintPdf(customerInvoicePdf(),customerInvoicePdfName(),'Packet Lily customer invoice')}
-  catch(error){console.error('Could not prepare invoice PDF',error);toast('Could not prepare the PDF. Try Safari or Save report file.');return 'error'}
+  catch(error){console.error('Could not prepare invoice PDF',error);toast('Could not prepare the PDF. Try Safari or Save PDF job packet.');return 'error'}
  }
  const report=$('#report');report.innerHTML=reportMarkup('customer-export');
  let restored=false;
@@ -886,36 +878,28 @@ async function printReceipt(){
   catch(err){console.error('Could not prepare receipt PDF',err);toast('Printing is unavailable. Try Save PDF receipt.');return 'error'}
  }finally{setTimeout(()=>document.body.classList.remove('print-receipt'),1500)}
 }
-function downloadHTML(){
-  let url;
-  try{
-    const {name,blob}=reportFile();
-    url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),30000);
-    toast('Report file prepared. Check your browser’s downloads or Files app.');
-  }catch(e){
-    if(url)URL.revokeObjectURL(url);
-    console.error('Could not save Job Packet',e);
-    toast('Could not save here. Try Share Job Packet or open in Safari.');
-  }
+async function downloadReportPdf(){
+ const button=$('#savePacketFileBtn');if(button.disabled)return;
+ button.disabled=true;
+ try{
+  const {name,blob}=await reportFile();
+  downloadBlob(blob,name);
+  toast('PDF packet downloaded. Open it in Files to view or print.');
+ }catch(error){
+  console.error('Could not save PDF job packet',error);
+  toast('Unable to prepare PDF. Please retry in Safari.');
+ }finally{button.disabled=false}
 }
 async function shareReport(){
-  try{
-    const {name,blob}=reportFile();
-    const file=typeof File==='function'?new File([blob],name,{type:'text/html'}):null;
-    if(file && navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
-      try{
-        await navigator.share({title:(state.job||'Completed job')+' — Job Packet',files:[file]});
-        return;
-      }catch(e){if(e && e.name==='AbortError')return;}
-    }
-    downloadHTML();
-  }catch(e){
-    console.error('Could not share Job Packet',e);
-    toast('Sharing isn’t available here. Use Save report file or Safari.');
-  }
+ const button=$('#sharePacketBtn');if(button.disabled)return;
+ button.disabled=true;
+ try{
+  const {name,blob}=await reportFile();
+  await offerPrintPdf(blob,name,(state.job||'Job')+' — Packet Lily PDF');
+ }catch(error){
+  console.error('Could not share PDF packet',error);
+  toast('Could not prepare PDF. Try Save PDF job packet.');
+ }finally{button.disabled=false}
 }
 function generatePacket(){
   try{
@@ -1011,7 +995,7 @@ $('#saveAllZipBtn').addEventListener('click',()=>fileToDevice('all'));
 $('#saveMonthDeskBtn').addEventListener('click',saveCurrentMonthToFiles);
 $('#exportArchiveBtn').addEventListener('click',exportArchive);
 $('#importArchiveFile').addEventListener('change',async e=>{await importArchive(e.target.files[0]);e.target.value=''});
-$('#savePacketFileBtn').addEventListener('click',downloadHTML);
+$('#savePacketFileBtn').addEventListener('click',downloadReportPdf);
 $('#printBtn').addEventListener('click',printCustomerInvoice);
 $('#ownerViewBtn').addEventListener('click',()=>setDeskSection('overview'));
 $('#paymentsViewBtn').addEventListener('click',()=>setDeskSection('payments'));
