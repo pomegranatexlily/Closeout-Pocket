@@ -17,12 +17,17 @@ assert(!/document\.cookie\s*=|https?:\/\/(google-analytics|www\.googletagmanager
 new Function(script);
 const seam='loadForm();nav();renderStorageChoice();';
 assert(script.includes(seam));
-const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,receiptText};');
+const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,setDeskSection,makeReceiptPdf,receiptPdfFilename,receiptText};');
 const events={},els=new Map();
 function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){},setAttribute(name,value){this[name]=value}});return els.get(key)}
 const screens=['build','preview','saved','business'].map(name=>({id:'screen-'+name,active:name==='build',classList:{toggle(flag,on){if(flag==='active')this.owner.active=on},owner:null}}));
 for(const screen of screens)screen.classList.owner=screen;
-const doc={querySelector:element,querySelectorAll:selector=>selector==='.screen'?screens:[],addEventListener:(event,handler)=>events[event]=handler,createElement:()=>({click(){},remove(){}}),body:{appendChild(){},classList:{add(){},remove(){}}}};
+const canvasContext={
+ scale(){},fillRect(){},fillText(){},createLinearGradient(){return {addColorStop(){}}},
+ measureText(v){return {width:String(v).length*6}}
+};
+const fakeCanvas={width:0,height:0,getContext:()=>canvasContext,toDataURL:()=> 'data:image/jpeg;base64,/9j/2Q=='};
+const doc={querySelector:element,querySelectorAll:selector=>selector==='.screen'?screens:[],addEventListener:(event,handler)=>events[event]=handler,createElement:tag=>tag==='canvas'?fakeCanvas:{click(){},remove(){}},body:{appendChild(){},classList:{add(){},remove(){}}}};
 const data=new Map(),localStorage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
 const win={scrollTo(){},location:{href:''},isSecureContext:false,addEventListener(){},print(){}};
 const navigator={share:async()=>{},clipboard:{writeText:async()=>{}}};
@@ -35,6 +40,15 @@ assert(screens.find(v=>v.id==='screen-business').active,'business screen must be
 assert(!screens.find(v=>v.id==='screen-build').active,'previous screen must be hidden');
 tapTab('preview');
 assert(screens.find(v=>v.id==='screen-preview').active,'preview must remain navigable');
+assert(element('.hero').hidden,'Marketing hero must be hidden on contractor desk');
+app.setDeskSection('payments');
+assert(!element('#deskPayments').hidden,'payments subtab is visible');
+assert(element('#deskOverview').hidden,'overview is hidden on payments');
+app.setDeskSection('receipts');
+assert(!element('#deskReceipts').hidden,'receipts has its own screen');
+app.setDeskSection('overview');
+assert(!element('#deskOverview').hidden,'return to overview works');
+
 assert.equal(element('#paymentCenter').hidden,false,'contractor desk is default');
 assert.equal(element('#customerPreviewNotice').hidden,true,'customer-only notice is hidden on contractor desk');
 tapTab('saved');
@@ -55,6 +69,8 @@ app.renderReport();
 assert(!element('#report').innerHTML.includes('r-payment-link'),'contractor desk never has customer payment button');
 app.setAudienceMode('customer');
 assert(element('#paymentCenter').hidden,'owner payment controls hidden in customer preview');
+assert(element('#deskOverview').hidden,'overview hidden in customer preview');
+assert(element('#deskReceipts').hidden,'receipt controls hidden in customer preview');
 assert(!element('#customerPreviewNotice').hidden,'customer preview distinctly labeled');
 const customerPreview=element('#report').innerHTML;
 assert(customerPreview.includes('pay-preview'),'customer sees a non-clickable CTA demonstration');
@@ -84,12 +100,28 @@ assert.equal(state.payments[0].verifiedByOwner,true);
 assert.equal(app.paymentRequestState(),'stale','exact payment link must become stale after balance change');
 assert(!element('#report').innerHTML.includes('r-payment-link'),'hide stale amount-specific request');
 assert(!element('#receiptPanel').hidden,'receipt should become visible');
+assert(!element('#deskReceipts').hidden,'recording a payment should open its receipt subtab');
+assert.equal(element('#receiptEmpty').hidden,true,'receipt placeholder hides once available');
 assert(element('#receiptDocument').innerHTML.includes('$100.00'));
 assert(element('#receiptDocument').innerHTML.includes('did not independently verify'));
 state.payments[0].note='PRIVATE NOT FOR CUSTOMER';
 app.renderPaymentCenter();
 assert(!element('#receiptDocument').innerHTML.includes('PRIVATE NOT FOR CUSTOMER'),'internal payment note must never appear on receipt');
 assert(!app.receiptText(state.payments[0]).includes('PRIVATE NOT FOR CUSTOMER'),'shared receipt must exclude private note');
+const pdf=app.makeReceiptPdf(state.payments[0]);
+assert.equal(pdf.type,'application/pdf','receipt download must be a genuine PDF Blob');
+assert(app.receiptPdfFilename(state.payments[0]).endsWith('.pdf'),'receipt filename must end in PDF');
+assert(!app.receiptPdfFilename(state.payments[0]).endsWith('.html'));
+pdf.arrayBuffer().then(bytes=>{
+ const docBytes=Buffer.from(bytes), body=docBytes.toString('latin1');
+ assert(body.startsWith('%PDF-1.4\\n'),'receipt must have a PDF signature');
+ assert(body.includes('/Subtype /Image'),'PDF embeds branded receipt image');
+ const ref=body.match(/startxref\\n(\\d+)\\n/);
+ assert(ref,'PDF cross-reference table missing');
+ assert.equal(body.slice(Number(ref[1]),Number(ref[1])+4),'xref','PDF byte offsets must be valid');
+ console.log('Genuine PDF receipt validation passed.');
+}).catch(e=>{console.error(e);process.exitCode=1});
+
 assert.equal(element('#invoicePaymentStatus').textContent,'Partially paid');
 enterPayment('150','TEST-PAID-2');
 assert.equal(state.paid,'250.00');
@@ -114,4 +146,4 @@ assert.equal(old.payments[0].verifiedByOwner,false,'old payments cannot be deeme
 assert.equal(app.normalize(old).payments.length,1,'migration must be idempotent');
 console.log('Packet Lily payment ledger and closeout smoke tests passed.');
 assert(index.includes('Customer preview'));
-console.log('Contractor/customer view separation tests passed.');
+console.log('Contractor/customer view separation and compact invoice sections passed.');
