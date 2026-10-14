@@ -1,4 +1,25 @@
 import {test,expect} from '@playwright/test';
+test('Cash App profile explains manual amount and exact request checkbox only appears for actual request links',async({page})=>{
+ await page.goto('./');
+ await page.locator('#bottomNav [data-switch="build"]').click();
+ await page.locator('#invoiceExtras > summary').click();
+ await page.locator('#paymentLink').fill('https://cash.app/$Example');
+ await expect(page.locator('#paymentLinkStatus')).toContainText('customer must enter');
+ await expect(page.locator('#confirmRequestRow')).toBeHidden();
+ await page.locator('#paymentLink').fill('https://cash.app/pay/ExampleRequest');
+ await expect(page.locator('#confirmRequestRow')).toBeVisible();
+ await expect(page.locator('#confirmPaymentAmount')).toBeEnabled();
+ await page.locator('#confirmPaymentAmount').check();
+ await expect(page.locator('#confirmPaymentAmount')).toBeChecked();
+});
+test('Sample business is labeled before a test invoice can accidentally be sent',async({page})=>{
+ await page.goto('./');
+ await page.locator('#bottomNav [data-switch="build"]').click();
+ await page.locator('#demoBtn').click();
+ await expect(page.locator('#sampleInvoiceNotice')).toBeVisible();
+ await expect(page.locator('#sampleInvoiceNotice')).toContainText('Sample data is loaded');
+});
+
 
 test('guided invoice, payment deduplication, closeout and PDF receipt',async({page})=>{
  page.on('dialog',dialog=>dialog.accept());
