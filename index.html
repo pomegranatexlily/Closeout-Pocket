@@ -190,11 +190,92 @@ function renderThumbs(){for(const kind of ['before','after']){$('#'+kind+'Thumbs
 function imgSection(){const n=state.photos.before.length+state.photos.after.length;if(!n)return '';const columns=['before','after'].map(kind=>state.photos[kind].map((p,i)=>`<div class="r-image-cell"><img src="${safe(p.data)}" alt="${kind} photo ${i+1}"><span>${kind==='before'?'BEFORE':'AFTER'} · Photo ${i+1}</span></div>`).join('')).join('');return `<section class="r-section"><h3>Photo documentation</h3><div class="r-image-grid">${columns}</div></section>`}
 function reportMarkup(){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0;return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}</div></div><div style="text-align:right"><div class="r-label">Completion report</div><div class="r-title">Job Packet</div><div class="r-badge">✓ WORK COMPLETED</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">Job details</div><div class="r-value">${dash(state.job)}</div><div class="r-light">Completed: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):'No work details recorded.'}</p></section>${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
 function renderReport(){$('#report').innerHTML=reportMarkup()}
-function renderSaved(){const wrap=$('#savedList');if(!saved.length){wrap.innerHTML='<div class="empty"><strong>No packets saved yet.</strong><p>Build a packet, select Save draft, and it will appear here.</p><button class="btn primary" data-switch="build">Build your first packet</button></div>';return}wrap.innerHTML=`<div class="saved-list">${saved.map((p,i)=>`<div class="saved-item"><div><h3>${dash(p.job||'Untitled job')}</h3><p>${dash(p.customer||'No customer')} · ${niceDate(p.date)} · ${fmt(num(p.total)-num(p.paid))} net balance</p></div><div class="actions"><button class="btn small" data-open="${i}">Open</button><button class="btn small danger" data-delete="${i}">Delete</button></div></div>`).join('')}</div>`}
+function renderSaved(){
+ const wrap=$('#savedList');
+ const term=($('#archiveSearch').value||'').trim().toLowerCase();
+ const records=saved.map((p,i)=>({p,i})).filter(({p})=>[p.customer,p.customerEmail,p.job,p.ref,p.company].some(v=>String(v||'').toLowerCase().includes(term)));
+ const outstanding=saved.reduce((sum,p)=>sum+Math.max(0,num(p.total)-num(p.paid)),0);
+ $('#archiveStats').textContent=saved.length+' invoices · '+fmt(outstanding)+' outstanding';
+ if(!saved.length){wrap.innerHTML='<div class="empty"><strong>No invoices archived yet.</strong><p>Generate a Job Packet or select Save to archive to keep a copy here.</p><button class="btn primary" data-switch="build">Create your first invoice</button></div>';return}
+ if(!records.length){wrap.innerHTML='<div class="empty"><strong>No matching invoices.</strong><p>Search by customer, job, or invoice number.</p></div>';return}
+ wrap.innerHTML='<div class="saved-list">'+records.map(({p,i})=>{
+  const balance=num(p.total)-num(p.paid);
+  const label=balance>0.005?'Outstanding '+fmt(balance):balance<-.005?'Credit '+fmt(-balance):'Paid in full';
+  return '<div class="saved-item"><div><h3>'+dash(p.ref||'No invoice #')+' · '+dash(p.job||'Untitled job')+'</h3><p>'+dash(p.customer||'No customer')+' · '+dash(p.customerEmail||'No email')+' · '+niceDate(p.date)+'</p><p>Total '+fmt(num(p.total))+' · Paid '+fmt(num(p.paid))+'</p><span class="archive-pill">'+safe(label)+'</span></div><div class="actions"><button class="btn small" data-open="'+i+'">Open</button><button class="btn small danger" data-delete="'+i+'">Delete</button></div></div>';
+ }).join('')+'</div>';
+}
 async function shrink(file){return new Promise((resolve,reject)=>{const img=new Image();let blobUrl=URL.createObjectURL(file);img.onload=()=>{try{const m=1150,scale=Math.min(1,m/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);const data=canvas.toDataURL('image/jpeg',.76);URL.revokeObjectURL(blobUrl);resolve(data)}catch(e){URL.revokeObjectURL(blobUrl);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(blobUrl);reject(new Error('Image could not be read'))};img.src=blobUrl})}
 async function photosFrom(kind,files){let remaining=Math.max(0,4-state.photos[kind].length);if(!remaining){toast('Maximum four '+kind+' photos.');return}let added=0;for(const f of Array.from(files).slice(0,remaining)){if(!f.type.startsWith('image/'))continue;try{const data=await shrink(f);state.photos[kind].push({data,name:f.name});added++}catch(e){toast('Could not read '+f.name)}}renderThumbs();renderReport();autosave();if(added)toast(`${added} ${kind} photo${added!==1?'s':''} added`)}
-function snapshot(){const copy=clone(state);copy.id='packet-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);copy.savedAt=new Date().toISOString();return copy}
-function savePacket(){const item=snapshot();const next=[item,...saved].slice(0,20);if(persist(K_SAVED,next)){saved=next;toast('Packet saved on this device')}else{toast('Not enough browser storage. Try removing some photos.')}}
+function snapshot(){
+ const copy=clone(state);
+ copy.id=state.archiveId||'packet-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
+ copy.savedAt=new Date().toISOString();
+ return copy;
+}
+function savePacket(quiet=false){
+ const item=snapshot(),old=saved.find(x=>x.id===item.id);
+ if(old)item.savedAt=old.savedAt||item.savedAt;
+ const next=[item,...saved.filter(x=>x.id!==item.id)];
+ if(!persist(K_SAVED,next)){
+  if(!quiet)toast('Could not archive. Export a report and free browser space.');
+  return false;
+ }
+ saved=next;state.archiveId=item.id;autosave();
+ if(!quiet)toast(old?'Invoice updated in archive':'Invoice saved to archive');
+ return true;
+}
+function downloadBlob(blob,name){
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+function exportArchive(){
+ if(!saved.length){toast('No invoices to export yet.');return}
+ const body={app:'Closeout Pocket',version:1,exportedAt:new Date().toISOString(),invoices:saved};
+ downloadBlob(new Blob([JSON.stringify(body,null,2)],{type:'application/json'}),'closeout-pocket-invoices-'+today()+'.json');
+ toast('Backup downloaded. Save it in your Files app.');
+}
+async function importArchive(file){
+ if(!file)return;
+ if(file.size>25000000){toast('Backup file is too large.');return}
+ try{
+  const data=JSON.parse(await file.text());
+  if(data?.app!=='Closeout Pocket'||!Array.isArray(data.invoices)||data.invoices.length>1000)throw Error('Invalid backup format');
+  const records=data.invoices;
+  if(!records.every(p=>p&&typeof p==='object'&&!Array.isArray(p)&&typeof p.id==='string'&&p.id.length<150&&typeof p.photos==='object'&&p.photos!==null))throw Error('Invalid invoice record');
+  if(!confirm('Import '+records.length+' invoices? Matching IDs will be replaced.'))return;
+  const merged=new Map(saved.map(p=>[p.id,p]));
+  for(const p of records)merged.set(p.id,normalize(p));
+  const next=[...merged.values()].sort((x,y)=>String(y.savedAt||'').localeCompare(String(x.savedAt||'')));
+  if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Imported '+records.length+' invoice records')}
+ }catch(e){console.error('Cannot import archive',e);toast('Backup could not be imported.')}
+}
+function emailInvoice(){
+ const recipient=String(state.customerEmail||'').trim();
+ const field=$('#customerEmail');
+ if(!recipient||!field.checkValidity()){
+  toast('Enter a valid customer email address.');
+  switchTo('build');field.focus();return;
+ }
+ const bal=num(state.total)-num(state.paid);
+ const subject='Invoice '+(state.ref||state.job||'Service')+' — '+(state.company||'Closeout Pocket');
+ const body=[
+  'Hello '+(state.customer||'')+',','','Here are your invoice details:',
+  'Invoice number: '+(state.ref||'—'),
+  'Job: '+(state.job||'—'),
+  'Completed: '+niceDate(state.date),
+  'Service address: '+fullAddress().replace(/\n/g,', '),
+  'Work completed: '+(state.work||state.summary||'—').slice(0,1200),
+  'Total: '+fmt(num(state.total)),
+  'Paid: '+fmt(num(state.paid)),
+  (bal<0?'Customer credit':'Balance due')+': '+fmt(Math.abs(bal)),
+  state.due?'Due date: '+niceDate(state.due):'',
+  state.notes||'','','Prepared by '+(state.company||'Service provider')
+ ].join('\n');
+ savePacket(true);
+ toast('Opening email draft. Review and tap Send.');
+ window.location.href='mailto:'+recipient+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
 function reportFile(){
   // Creates the customer's complete report as an independent, portable HTML file.
   renderReport();
@@ -273,16 +354,20 @@ document.addEventListener('blur',e=>{
  }
 },true);
 
-document.addEventListener('click',e=>{const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const rm=e.target.closest('[data-remove-photo]');if(rm){const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize(clone(item)));toast('Saved packet opened')}return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Saved packet deleted')}return}});
+document.addEventListener('click',e=>{const sw=e.target.closest('[data-switch]');if(sw){switchTo(sw.dataset.switch);return}const rm=e.target.closest('[data-remove-photo]');if(rm){const [k,i]=rm.dataset.removePhoto.split(':');state.photos[k].splice(Number(i),1);renderThumbs();renderReport();autosave();return}const op=e.target.closest('[data-open]');if(op){const item=saved[Number(op.dataset.open)];if(item){startOver(normalize({...clone(item),archiveId:item.id}));toast('Archived invoice opened')}return}const del=e.target.closest('[data-delete]');if(del){const i=Number(del.dataset.delete);if(!confirm('Delete this saved packet from this browser?'))return;const next=saved.filter((_,j)=>j!==i);if(persist(K_SAVED,next)){saved=next;renderSaved();toast('Invoice deleted from archive')}return}});
 $('#beforeFiles').addEventListener('change',e=>{photosFrom('before',e.target.files);e.target.value=''});
 $('#afterFiles').addEventListener('change',e=>{photosFrom('after',e.target.files);e.target.value=''});
 $('#previewBtn').addEventListener('click',generatePacket);
 $('#sharePacketBtn').addEventListener('click',shareReport);
+$('#emailInvoiceBtn').addEventListener('click',emailInvoice);
+$('#archiveSearch').addEventListener('input',renderSaved);
+$('#exportArchiveBtn').addEventListener('click',exportArchive);
+$('#importArchiveFile').addEventListener('change',async e=>{await importArchive(e.target.files[0]);e.target.value=''});
 $('#savePacketFileBtn').addEventListener('click',downloadHTML);
 $('#printBtn').addEventListener('click',()=>window.print());
 $('#copyBtn').addEventListener('click',copySummary);
 $('#downloadBtn').addEventListener('click',downloadHTML);
-$('#saveBtn').addEventListener('click',savePacket);
+$('#saveBtn').addEventListener('click',()=>savePacket(false));
 $('#blankBtn').addEventListener('click',()=>{if(confirm('Start a new blank packet? Your current draft will be replaced. Saved packets will remain.'))startOver(blank())});
 $('#demoBtn').addEventListener('click',()=>startOver(demo()));
 loadForm();nav();
