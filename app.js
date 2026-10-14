@@ -66,7 +66,7 @@ let state=normalize(previousDraft||newInvoice());let saved=retrieve(K_SAVED);if(
 const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
 let privacyAcknowledged=storedPreferences?.acknowledged===true||storedPreferences===null&&deviceSaving;
-let tab='build',toastTimer,receiptPaymentId='',viewMode='owner',deskSection='overview';
+let tab='home',toastTimer,receiptPaymentId='',viewMode='owner',deskSection='overview';
 function normalize(v){
  const o={...blank(),...v};
  // Older drafts stored "street, city, ST" as one line: migrate when unambiguous.
@@ -105,9 +105,17 @@ function fullAddress(){const location=[state.city,state.stateCode].filter(Boolea
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3300)}
 const icons={build:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h4"/></svg>',preview:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',saved:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h14v18l-7-4-7 4z"/></svg>'};
 icons.business='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V5l8-3 8 3v16M3 21h18M9 9h6M9 13h6M10 21v-4h4v4"/></svg>';
-const labels={build:'New invoice',preview:'Invoice desk',saved:'Invoices',business:'My Business'};
-function nav(){for(const target of ['#sideNav','#bottomNav']){const host=$(target);host.innerHTML=Object.keys(labels).map(k=>`<button type="button" data-switch="${k}" class="${tab===k?'active':''}" aria-current="${tab===k?'page':'false'}">${icons[k]}<span>${labels[k]}</span></button>`).join('')}}
-function switchTo(which){if(!labels[which])return;tab=which;const hero=$('.hero');if(hero)hero.hidden=which!=='build';if(which==='preview'){viewMode='owner';deskSection='overview'}$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
+icons.home='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 11 9-8 9 8v10h-6v-7H9v7H3z"/></svg>';
+const labels={home:'Home',build:'New invoice',preview:'Invoice desk',saved:'Invoices',business:'My Business'};
+function nav(){
+ for(const target of ['#sideNav','#bottomNav']){
+  const host=$(target),keys=Object.keys(labels).filter(k=>target==='#sideNav'||k!=='home');
+  host.innerHTML=keys.map(k=>`<button type="button" data-switch="${k}" class="${tab===k?'active':''}" aria-current="${tab===k?'page':'false'}">${icons[k]}<span>${labels[k]}</span></button>`).join('');
+ }
+ const home=$('.home-return');
+ if(home){home.classList.toggle('active',tab==='home');home.setAttribute('aria-current',tab==='home'?'page':'false')}
+}
+function switchTo(which){if(!labels[which])return;tab=which;if(which==='preview'){viewMode='owner';deskSection='overview'}$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
 function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport();renderPaymentStatus();renderPaymentCenter();const txt=$('#businessOnInvoice');if(txt)txt.textContent=state.company?'From '+state.company:'Set up your business details under My Business.'}
 function renderStorageChoice(){
  const notice=$('#deviceSaveNotice');
@@ -748,6 +756,6 @@ $('#copyBtn').addEventListener('click',copySummary);
 $('#saveBtn').addEventListener('click',()=>savePacket(false));
 $('#blankBtn').addEventListener('click',beginNewInvoice);
 $('#demoBtn').addEventListener('click',()=>startOver(demo()));
-loadForm();nav();renderStorageChoice();renderBusinessSettings();
+loadForm();nav();renderStorageChoice();renderBusinessSettings();switchTo('home');
 if('serviceWorker' in navigator && window.isSecureContext){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
 })();
