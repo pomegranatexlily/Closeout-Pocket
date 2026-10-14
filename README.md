@@ -5,6 +5,16 @@
 ### Packet Lily design
 Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
+### Contractor workspace and customer copy (v3.3)
+
+The **Invoice desk** is a private operator workflow. The **Contractor desk** view (default) shows the manual payment ledger, owner-only controls, and a read-only invoice with **no clickable Cash App payment button**. The **Customer preview** is clearly labeled and disables the payment button so the contractor does not inadvertently open their own Cash App session. It also hides the owner payment desk.
+
+**Share report file** and **Save report file** produce an independent customer-facing HTML invoice, with only the customer's invoice and a working Cash App link when one is configured. The HTML file does not contain the contractor payment desk, payment entries, invoice archive, or internal payment-entry notes. **Email invoice** opens a customer email draft with a payment link. **Print customer invoice / PDF** prints the customer-facing version even from the Contractor desk.
+
+The customer must receive the shared invoice/request on **their own device** for the payment button to be actionable in their Cash App session. The business's Cash App account remains the payment destination; opening the business's own receiving link on their phone is not a meaningful checkout test. This static app does **not** host per-customer payment pages or provide authenticated customer portals.
+
+Receipt exports likewise exclude the operator's internal payment notes.
+
 ### Payment desk and completion (v3.1)
 
 Open **Preview → The Payment Desk** to record each payment only after confirming the funds through Cash App, your bank, or in person. Each entry records its amount, received date, method, optional reference and note, confirmation that the owner checked it, and a locally generated receipt reference. The running paid total and balance are calculated from active entries, so partial payments work without entering the full paid total manually.
