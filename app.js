@@ -316,26 +316,40 @@ function paymentRequestText(){
  ].filter(Boolean).join('\n');
 }
 async function sharePaymentRequest(){
+ if(paymentShareInProgress){toast('The share window is already opening.');return}
+ if(!invoicePrepared()){guideToDraft('Generate an invoice before sharing its payment request.');return}
  const balance=num(state.total)-num(state.paid),link=payableLink();
  if(balance<=0.005){toast('No balance is due on this invoice.');return}
  if(!link){
   toast('Paste a valid Cash App request and confirm its amount, or use a $cashtag profile link.');
   switchTo('build');focusOptionalField('#paymentLink');return;
  }
- if(!savePacket(true))toast('Archive unavailable; remember to export a backup.');
- const message=paymentRequestText();
- if(navigator.share){
-  try{
-   await navigator.share({title:'Payment request '+(state.ref||''),text:message});
-   return;
-  }catch(e){if(e?.name==='AbortError')return;console.error('Share request failed',e)}
- }
+ const signature=[state.ref,state.customer,cents(balance),link].join('|');
+ const previous=state.lastPaymentRequestShare;
+ const recent=previous?.signature===signature&&Number.isFinite(Date.parse(previous.at))&&Date.now()-Date.parse(previous.at)<86400000;
+ if(recent&&!confirm('You already opened this same payment request for sharing in the last 24 hours. Double-check the customer has not already paid. Share again?'))return;
+ paymentShareInProgress=true;
+ const button=$('#sharePaymentBtn');button.disabled=true;
+ const markOpened=()=>{
+  // A completed share sheet does NOT prove delivery or a Cash App payment.
+  state.lastPaymentRequestShare={signature,at:new Date().toISOString()};
+  autosave();savePacket(true);
+ };
  try{
-  await navigator.clipboard.writeText(message);
-  toast('Payment request copied. Paste it into Messages or email.');
- }catch(e){
-  toast('Unable to share here. Open Safari and try again.');
- }
+  if(!savePacket(true))toast('Archive unavailable; remember to export a backup.');
+  const message=paymentRequestText();
+  if(navigator.share){
+   try{
+    await navigator.share({title:'Payment request '+(state.ref||''),text:message});
+    markOpened();toast('Share action completed. This does not confirm delivery or payment.');
+    return;
+   }catch(e){if(e?.name==='AbortError')return;console.error('Share request failed',e)}
+  }
+  try{
+   await navigator.clipboard.writeText(message);
+   toast('Request copied. This is not yet sent—paste it into Messages or email.');
+  }catch(e){toast('Unable to share here. Open Safari and try again.')}
+ }finally{paymentShareInProgress=false;button.disabled=false}
 }
 function reportMarkup(audience='owner'){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0,fullPacket=Boolean(state.job||state.work||state.summary||state.photos.before.length||state.photos.after.length);const businessLocation=[state.businessCity,state.businessState].filter(Boolean).join(', '),businessAddress=[state.businessAddress,[businessLocation,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}${businessAddress?'<br>'+safe(businessAddress):''}</div></div><div style="text-align:right"><div class="r-label">${state.closedAt&&fullPacket?"Completed & paid":"Customer invoice"}</div><div class="r-title">${state.closedAt&&fullPacket?"Final Job Packet":"Invoice"}</div><div class="r-badge">${state.closedAt?"✓ PAID IN FULL":balance<=0.005?"PAYMENT RECORDED":"BALANCE DUE"}</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">${fullPacket?'Job details':'Invoice details'}</div><div class="r-value">${dash(state.job||"Services")}</div><div class="r-light">${state.closedAt&&fullPacket?'Closed':'Issued'}: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}${fullPacket?`<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):"See job description."}</p></section>`:""}${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${audience!=='owner'&&balance>0.005&&payableLink()?`<section class="r-payment-link"><p class="pay-label">Pay through Cash App</p>${audience==='customer-export'?'<a href="'+safe(payableLink())+'" target="_blank" rel="noopener noreferrer">'+safe(paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →')+'</a>':'<span class="pay-preview" aria-disabled="true">'+safe(paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →')+'</span>'}<p class="pay-explain">${audience==='customer-preview'?'Preview only — payment is available in the customer copy sent to their device. ':''}${paymentRequestState()==='manual'?'This is a profile link: enter the amount yourself. ':''}Payment is handled by Cash App, not Packet Lily. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
 function renderReport(){$('#report').innerHTML=reportMarkup(viewMode==='customer'?'customer-preview':'owner')}
