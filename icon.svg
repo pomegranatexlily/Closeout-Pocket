@@ -1,1 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc"><title id="title">Closeout Pocket</title><desc id="desc">Mint folded invoice with gold payment seal on a navy tile</desc><defs><linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#182f45"/><stop offset="1" stop-color="#0a1726"/></linearGradient><linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f2fffa"/><stop offset="1" stop-color="#9fe6d4"/></linearGradient></defs><rect width="128" height="128" rx="27" fill="url(#background)"/><path d="M32 19h43l21 21v65a8 8 0 0 1-8 8H32a8 8 0 0 1-8-8V27a8 8 0 0 1 8-8z" fill="url(#paper)"/><path d="M75 19v19a5 5 0 0 0 5 5h16" fill="none" stroke="#1f766d" stroke-width="5" stroke-linejoin="round"/><rect x="39" y="52" width="42" height="6" rx="3" fill="#1a5a59"/><rect x="39" y="65" width="30" height="6" rx="3" fill="#4aa997"/><rect x="39" y="78" width="23" height="6" rx="3" fill="#4aa997"/><circle cx="91" cy="93" r="25" fill="#0b1727"/><circle cx="91" cy="93" r="21" fill="#ffc86d"/><path d="M91 80v26M98.5 85c-2-2.5-5.3-3.4-8.4-3.4-4.6 0-7.4 2-7.4 5.5 0 3.8 3.4 5.1 8.7 6.3 5.2 1.1 8.6 2.7 8.6 6.3 0 3.7-3.5 6-8.6 6-3.6 0-7.3-1.5-9.4-4" stroke="#173044" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+<title id="title">Packet Lily</title><desc id="desc">An ivory job packet with a gold lily seal on a rich violet tile</desc>
+<defs>
+ <linearGradient id="night" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#573371"/><stop offset=".57" stop-color="#291738"/><stop offset="1" stop-color="#171022"/></linearGradient>
+ <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdf9"/><stop offset="1" stop-color="#e7d8f1"/></linearGradient>
+ <linearGradient id="seal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe4b6"/><stop offset="1" stop-color="#efb976"/></linearGradient>
+</defs>
+<rect width="128" height="128" rx="27" fill="url(#night)"/>
+<path d="M15 33C37 6 89 6 112 39" fill="none" stroke="#bd90d7" stroke-width="1" opacity=".32"/>
+<rect x="36" y="21" width="62" height="83" rx="11" fill="#9b6ec0" transform="rotate(9 67 63)"/>
+<rect x="24" y="26" width="73" height="86" rx="12" fill="url(#paper)"/>
+<path d="M72 26V42a8 8 0 0 0 8 8h17" fill="#e9d7f0" stroke="#d6bce8" stroke-width="1"/>
+<rect x="38" y="61" width="42" height="5" rx="2.5" fill="#593778"/>
+<rect x="38" y="73" width="32" height="5" rx="2.5" fill="#b397cf"/>
+<rect x="38" y="85" width="26" height="5" rx="2.5" fill="#b397cf"/>
+<circle cx="88" cy="91" r="25" fill="#2b1b3b"/>
+<circle cx="88" cy="91" r="21" fill="url(#seal)"/>
+<g fill="#553673">
+<path d="M88 74c-8 6-9 12 0 17 9-5 8-11 0-17z"/>
+<path d="M105 91c-6-8-12-9-17 0 5 9 11 8 17 0z"/>
+<path d="M88 108c8-6 9-12 0-17-9 5-8 11 0 17z"/>
+<path d="M71 91c6 8 12 9 17 0-5-9-11-8-17 0z"/>
+</g>
+<circle cx="88" cy="91" r="4" fill="#fff7df"/>
+</svg>
