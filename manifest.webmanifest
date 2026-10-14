@@ -1,13 +1,13 @@
 {
   "id": "/Closeout-Pocket/",
-  "name": "Closeout Pocket",
-  "short_name": "Closeout",
-  "description": "Professional job completion reports, invoices and customer payment requests.",
+  "name": "Packet Lily",
+  "short_name": "Packet Lily",
+  "description": "Polished invoices, completion packets, and payment tracking. Every job. All wrapped up.",
   "start_url": "/Closeout-Pocket/",
   "scope": "/Closeout-Pocket/",
   "display": "standalone",
-  "background_color": "#f4f7f6",
-  "theme_color": "#101f30",
+  "background_color": "#f8f6fb",
+  "theme_color": "#20142f",
   "lang": "en",
   "categories": [
     "business",
