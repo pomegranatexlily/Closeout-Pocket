@@ -413,14 +413,14 @@ function makeReceiptPdf(p){
  ctx.textBaseline='top';
  const write=(value,x,y,size=12,color='#30203f',weight='normal',maxWidth=505)=>{
   ctx.font=weight+' '+size+'px system-ui, -apple-system, sans-serif';
-  let str=String(value??'').replace(/\\s+/g,' ').trim();
+  let str=String(value??'').replace(/\s+/g,' ').trim();
   if(!str)str='—';
   while(str.length>1&&ctx.measureText(str).width>maxWidth)str=str.slice(0,-2)+'…';
   ctx.fillStyle=color;ctx.fillText(str,x,y);
  };
  const wrap=(value,x,y,width,maxLines=2,size=11,color='#e3d8e9')=>{
   ctx.font='normal '+size+'px system-ui, -apple-system, sans-serif';
-  const words=String(value||'').split(/\\s+/).filter(Boolean);
+  const words=String(value||'').split(/\s+/).filter(Boolean);
   let lines=[],line='';
   for(const word of words){
    const candidate=line?line+' '+word:word;
@@ -469,20 +469,20 @@ function makeReceiptPdf(p){
  const add=bytes=>{chunks.push(bytes);length+=bytes.length};
  const ascii=str=>add(enc.encode(str));
  const offsets=[0];
- const obj=(n,str)=>{offsets[n]=length;ascii(n+' 0 obj\\n'+str+'\\nendobj\\n')};
- ascii('%PDF-1.4\\n');
+ const obj=(n,str)=>{offsets[n]=length;ascii(n+' 0 obj\n'+str+'\nendobj\n')};
+ ascii('%PDF-1.4\n');
  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
  obj(2,'<< /Type /Pages /Count 1 /Kids [3 0 R] >>');
  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>');
  offsets[4]=length;
- ascii('4 0 obj\\n<< /Type /XObject /Subtype /Image /Width 1190 /Height 1684 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\\nstream\\n');
- add(jpg);ascii('\\nendstream\\nendobj\\n');
- const draw='q\\n595 0 0 842 0 0 cm\\n/Im1 Do\\nQ\\n';
- obj(5,'<< /Length '+enc.encode(draw).length+' >>\\nstream\\n'+draw+'endstream');
+ ascii('4 0 obj\n<< /Type /XObject /Subtype /Image /Width 1190 /Height 1684 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');
+ add(jpg);ascii('\nendstream\nendobj\n');
+ const draw='q\n595 0 0 842 0 0 cm\n/Im1 Do\nQ\n';
+ obj(5,'<< /Length '+enc.encode(draw).length+' >>\nstream\n'+draw+'endstream');
  const xref=length;
- ascii('xref\\n0 6\\n0000000000 65535 f \\n');
- for(let n=1;n<=5;n++)ascii(String(offsets[n]).padStart(10,'0')+' 00000 n \\n');
- ascii('trailer\\n<< /Size 6 /Root 1 0 R >>\\nstartxref\\n'+xref+'\\n%%EOF');
+ ascii('xref\n0 6\n0000000000 65535 f \n');
+ for(let n=1;n<=5;n++)ascii(String(offsets[n]).padStart(10,'0')+' 00000 n \n');
+ ascii('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
  return new Blob(chunks,{type:'application/pdf'});
 }
 function receiptPdfFilename(p){return 'Packet-Lily-Receipt-'+String(p.id).replace(/[^a-z0-9-]/gi,'').slice(0,100)+'.pdf'}
