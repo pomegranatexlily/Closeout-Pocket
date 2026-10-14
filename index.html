@@ -181,7 +181,14 @@
     <button type="button" class="btn" id="savePacketFileBtn">Save report file</button>
   </div>
 </div>
-<div class="preview-toolbar"><div><h2>Your Job Packet</h2><p>Review before handing it to your customer.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn primary small" id="printBtn">Print / Save PDF</button></div></div><section class="payment-center" id="paymentCenter" aria-labelledby="paymentsHeading">
+<div class="audience-switcher" aria-label="Preview mode">
+  <div class="audience-switcher-head"><strong>Invoice workspace</strong><span>PRIVATE • CONTRACTOR DEVICE</span></div>
+  <div class="audience-options"><button type="button" class="audience-option active" id="ownerViewBtn" aria-pressed="true">Contractor desk</button><button type="button" class="audience-option" id="customerViewBtn" aria-pressed="false">Customer preview</button></div>
+  <p id="audienceExplainer">Your private tools live here. The customer receives only the invoice or receipt you choose to share.</p>
+</div>
+<div class="preview-toolbar"><div><h2>Contractor invoice desk</h2><p>Manage this customer's invoice, payments, and receipts here. Customer payment links appear only in the customer copy.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn primary small" id="printBtn">Print customer invoice / PDF</button></div></div>
+<div id="customerPreviewNotice" class="customer-preview-notice" hidden><strong>Customer copy preview — not a payment screen.</strong><p>This is how your customer’s invoice looks. The Cash App control is disabled in this preview. It is a working payment link only in the standalone file or request sent to the customer’s device.</p><button class="btn small" type="button" id="returnToDeskBtn">← Back to contractor desk</button></div>
+<section class="payment-center" id="paymentCenter" aria-labelledby="paymentsHeading">
   <header class="payment-center-head">
     <div><span class="payment-eyebrow">THE PAYMENT DESK</span><h3 id="paymentsHeading">Collect. Confirm. Close.</h3><p>Record payments after checking them in Cash App, your bank, or in person. Packet Lily does not independently verify deposits.</p></div>
     <span class="payment-status" id="invoicePaymentStatus">Awaiting payment</span>
@@ -212,10 +219,10 @@
     <article id="receiptDocument" class="receipt-sheet" aria-label="Receipt recorded by the business owner"></article>
   </section>
 </section>
-<article class="report" id="report" aria-label="Job completion report"></article><p class="help" style="max-width:830px;margin:15px auto">Share payment request sends invoice details and a Cash App link as message text. Email invoice opens a draft; you still tap Send. Use Share report file when photos need to accompany the invoice. Payments must be confirmed and recorded manually.</p></section>
+<article class="report" id="report" aria-label="Read-only invoice review"></article><p class="help" style="max-width:830px;margin:15px auto">Contractor desk is private. A shared invoice file contains only customer-facing invoice details and a payment link when configured; it never contains your payment desk, transaction ledger, or internal notes. A Cash App link is not proof of payment.</p></section>
 <section id="screen-saved" class="screen"><div class="section-title"><div><h2>Invoice archive</h2><p>Generated invoices and saved Job Packets on this device.</p></div><button class="btn primary small" data-new-invoice>+ New invoice</button></div><div class="archive-tools"><input id="archiveSearch" type="search" placeholder="Search customer, job, or invoice #" aria-label="Search invoices"><button class="btn small" id="exportArchiveBtn">Export backup file</button><label class="btn small" for="importArchiveFile">Import backup</label><input id="importArchiveFile" type="file" accept="application/json,.json" hidden></div><div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
 <section class="privacy-notice" id="privacySettings"><h3>Privacy &amp; device storage</h3><p id="storageStateText"></p><div class="action-bar"><button type="button" class="btn small" id="toggleDeviceSaveBtn">Change saving preference</button><button type="button" class="btn danger small" id="eraseDeviceBtn">Erase all local invoices and drafts</button><a class="btn small" href="privacy.html">Privacy details</a></div><p class="help">No analytics, advertising trackers, or nonessential cookies are used. Your archive is not a secure multi-device business database.</p></section><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Packet Lily · Pomegranate × Lily · v3.1 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<p class="copyright">Packet Lily · Pomegranate × Lily · v3.3 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="app.js" defer></script>
