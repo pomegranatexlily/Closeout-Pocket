@@ -407,3 +407,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-vi
 .required-checks span[data-done="true"]{background:#eaf7ec;border-color:#c8e7cd;color:#2a7844}
 @media(max-width:680px){.required-steps{padding:13px 11px}.required-checks{gap:5px}.required-checks span{padding:7px 9px;font-size:10px}}
 @media print{.required-steps{display:none!important}}
+
+
+/* Packet Lily v3.9 — responsiveness and graceful interaction states. */
+.tiny-pill[data-offline="true"]{border-color:#e7c9a4!important;background:#fff5e7!important;color:#7b5125!important}
+button:not(:disabled){-webkit-tap-highlight-color:rgba(124,82,174,.18);touch-action:manipulation}
+button:disabled{cursor:not-allowed;opacity:.55;box-shadow:none!important}
+.btn,.home-guide,.audience-option,.bottomnav button,.archive-status-tab{transition:background-color .15s ease,transform .12s ease,box-shadow .15s ease,border-color .15s ease}
+button:not(:disabled):active{transform:scale(.985);filter:brightness(.96)}
+#recordPaymentBtn:disabled,#sharePaymentBtn:disabled{opacity:.55}
+.payment-line,.saved-item{overflow-wrap:anywhere}
+html{scroll-padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+input,textarea,select{scroll-margin-top:75px;scroll-margin-bottom:calc(125px + env(safe-area-inset-bottom))}
+@media(max-width:680px){#screen-build,#screen-business,#screen-preview,#screen-saved{padding-bottom:calc(25px + env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){.btn,.home-guide,.audience-option,.bottomnav button,.archive-status-tab,.workflow-progress span{transition:none!important;animation:none!important}button:not(:disabled):active{transform:none}}
