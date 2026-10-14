@@ -3,7 +3,7 @@
 const K_DRAFT='closeout-pocket-draft-v1',K_SAVED='closeout-pocket-saved-v1',K_PREFS='closeout-pocket-privacy-v1',K_PAYMENT_ACCOUNT='closeout-pocket-payment-account-v1',K_BUSINESS='closeout-pocket-business-v1';
 const today=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const demo=()=>({company:'Northside Home Services',phone:'(555) 010-0188',companyEmail:'office@northside.example',customer:'Jordan Lee',customerEmail:'jordan@example.com',job:'Kitchen faucet repair & replacement',address:'218 Oak View Drive',city:'Dallas',stateCode:'TX',zip:'75201',date:today(),ref:'JP-1001',summary:'Customer reported a persistent leak under the kitchen faucet and requested replacement of the worn fixture.',work:'• Shut off the water supply and removed the existing faucet.\n• Installed a new customer-provided faucet and connected supply lines.\n• Checked all fittings for leaks and tested water pressure.\n• Cleaned the work area and walked the customer through the finished installation.',total:'250',paid:'50',due:'',notes:'Thank you for choosing Northside Home Services. Please reach out with any questions.',photos:{before:[],after:[]}});
-const blank=()=>({payments:[],closedAt:'',company:'',phone:'',companyEmail:'',businessAddress:'',businessCity:'',businessState:'',businessZip:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
+const blank=()=>({workflowVersion:2,preparedAt:'',payments:[],closedAt:'',company:'',phone:'',companyEmail:'',businessAddress:'',businessCity:'',businessState:'',businessZip:'',customer:'',customerEmail:'',job:'',address:'',city:'',stateCode:'',zip:'',date:today(),ref:'',summary:'',work:'',total:'',paid:'',due:'',paymentLink:'',paymentRequestConfirmed:false,paymentRequestAmount:'',paymentRequestConfirmedLink:'',paymentLinkNeedsRefresh:false,notes:'',photos:{before:[],after:[]}});
 const fields=['company','phone','companyEmail','businessAddress','businessCity','businessState','businessZip','customer','customerEmail','job','address','city','stateCode','zip','date','ref','summary','work','total','paid','due','paymentLink','notes'];
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
 const safe=val=>String(val??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -98,6 +98,10 @@ function normalize(v){
  })).filter(p=>cents(p.amount)>0&&cents(p.amount)<=100000000000);
  o.paid=(o.payments.reduce((sum,p)=>sum+(p.voidedAt?0:cents(p.amount)),0)/100).toFixed(2);
  o.closedAt=typeof o.closedAt==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(o.closedAt)&&cents(o.paid)>=cents(o.total)&&cents(o.total)>0?o.closedAt.slice(0,50):'';
+ const priorReady=Boolean(v&&(v.id||v.archiveId||o.payments.length||o.closedAt));
+ const claimed=typeof v?.preparedAt==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v.preparedAt)?v.preparedAt.slice(0,50):'';
+ o.preparedAt=claimed||(v?.workflowVersion!==2&&priorReady?String(v?.savedAt||new Date().toISOString()).slice(0,50):'');
+ o.workflowVersion=2;
  return o;
 }
 function fullAddress(){const location=[state.city,state.stateCode].filter(Boolean).join(state.city&&state.stateCode?', ':' ');return [state.address,[location,state.zip].filter(Boolean).join(' ')].filter(Boolean).join('\n')}
@@ -115,7 +119,55 @@ function nav(){
  const home=$('.home-return');
  if(home){home.classList.toggle('active',tab==='home');home.setAttribute('aria-current',tab==='home'?'page':'false')}
 }
-function switchTo(which){if(!labels[which])return;tab=which;if(which==='preview'){viewMode='owner';deskSection='overview'}$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
+function readyToPrepare(){
+ return Boolean(state.company?.trim()&&state.customer?.trim()&&cents(state.total)>0&&state.ref?.trim());
+}
+function invoicePrepared(){return readyToPrepare()&&Boolean(state.preparedAt)}
+function invoiceStage(){
+ if(!invoicePrepared())return 'draft';
+ const total=cents(state.total),paid=cents(state.paid);
+ if(state.closedAt&&total>0&&paid>=total)return 'closed';
+ if(paid>=total&&total>0)return 'ready-close';
+ if(paid>0)return 'partial';
+ return 'unpaid';
+}
+function receiptsUnlocked(){return invoiceStage()==='closed'&&activePayments().some(p=>p.source==='owner'&&p.verifiedByOwner)}
+function guideToDraft(message){
+ tab='build';$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-build'));
+ nav();$('#crumb').textContent=labels.build;window.scrollTo({top:0,behavior:'instant'});
+ toast(message||'Complete the invoice details and tap Generate invoice to continue.');
+}
+function workflowNext(){
+ const stage=invoiceStage();
+ if(stage==='draft'){switchTo('build');toast('Enter the required details and tap Generate invoice.');return}
+ if(stage==='closed'){setDeskSection('receipts',true);return}
+ if(stage==='ready-close'){setDeskSection('overview',true);return}
+ setDeskSection(stage==='unpaid'?'overview':'payments',true);
+}
+function renderWorkflowGuide(){
+ const stage=invoiceStage(),config={
+  draft:['1 of 4','Complete the invoice','A business, customer, positive amount and generated invoice are required before payment tracking.','Generate invoice →',25],
+  unpaid:['2 of 4','Invoice ready — awaiting payment','Share the customer invoice, then record money only after it actually arrives.','Customer invoice →',50],
+  partial:['3 of 4','Partially paid','Record the remaining verified payment. Final receipt and closeout remain locked.','Record remaining payment →',75],
+  'ready-close':['3 of 4','Payment recorded — close the job','Your ledger covers the balance. Review it, then confirm the final closeout.','Complete closeout →',75],
+  closed:['4 of 4','Closed — receipt unlocked','This invoice was marked paid in full by the business owner. Final receipt is now available.','View final receipt →',100]
+ }[stage];
+ $('#workflowStep').textContent='Step '+config[0];
+ $('#workflowTitle').textContent=config[1];
+ $('#workflowHint').textContent=config[2];
+ $('#workflowProgress').style.width=config[4]+'%';
+ $('#workflowNextBtn').textContent=config[3];
+ $('#workflowNextBtn').hidden=stage==='draft';
+ $('#receiptsViewBtn').disabled=!receiptsUnlocked();
+ $('#receiptsViewBtn').setAttribute('aria-disabled',String(!receiptsUnlocked()));
+ $('#receiptsViewBtn').textContent=receiptsUnlocked()?'Receipts':'Receipts · Locked';
+ $('#customerViewBtn').disabled=!invoicePrepared();
+ $('#customerViewBtn').setAttribute('aria-disabled',String(!invoicePrepared()));
+ $('#overviewReceiptsBtn').disabled=!receiptsUnlocked();
+ $('#overviewPaymentsBtn').disabled=!invoicePrepared();
+ const toolbar=$('#printBtn');if(toolbar)toolbar.disabled=!invoicePrepared();
+}
+function switchTo(which){if(!labels[which])return;if(which==='preview'&&!invoicePrepared()){guideToDraft('Generate a valid invoice before entering its desk.');return}tab=which;if(which==='preview'){viewMode='owner';deskSection='overview'}$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter();renderWorkflowGuide()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
 function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport();renderPaymentStatus();renderPaymentCenter();const txt=$('#businessOnInvoice');if(txt)txt.textContent=state.company?'From '+state.company:'Set up your business details under My Business.'}
 function renderStorageChoice(){
  const notice=$('#deviceSaveNotice');
@@ -291,7 +343,7 @@ function setAudienceMode(mode){
 
 /* Owner-confirmed payments: no gateway, bank feed, or provider verification. */
 function activePayments(){return (state.payments||[]).filter(p=>!p.voidedAt)}
-function currentReceipt(){return activePayments().find(p=>p.id===receiptPaymentId&&p.source==='owner'&&p.verifiedByOwner===true)||null}
+function currentReceipt(){return receiptsUnlocked()?activePayments().find(p=>p.id===receiptPaymentId&&p.source==='owner'&&p.verifiedByOwner===true)||null:null}
 function reconcilePaid(){
  const before=cents(state.paid);
  const after=activePayments().reduce((sum,p)=>sum+cents(p.amount),0);
