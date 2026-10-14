@@ -66,7 +66,7 @@ let state=normalize(previousDraft||newInvoice());let saved=retrieve(K_SAVED);if(
 const storedPreferences=retrieve(K_PREFS);
 let deviceSaving=storedPreferences?.enabled===true||(storedPreferences===null&&!!(retrieve(K_DRAFT)||saved.length));
 let privacyAcknowledged=storedPreferences?.acknowledged===true||storedPreferences===null&&deviceSaving;
-let tab='build',toastTimer,receiptPaymentId='';
+let tab='build',toastTimer,receiptPaymentId='',viewMode='owner';
 function normalize(v){
  const o={...blank(),...v};
  // Older drafts stored "street, city, ST" as one line: migrate when unambiguous.
@@ -105,9 +105,9 @@ function fullAddress(){const location=[state.city,state.stateCode].filter(Boolea
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3300)}
 const icons={build:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h4"/></svg>',preview:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',saved:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h14v18l-7-4-7 4z"/></svg>'};
 icons.business='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V5l8-3 8 3v16M3 21h18M9 9h6M9 13h6M10 21v-4h4v4"/></svg>';
-const labels={build:'New invoice',preview:'Preview',saved:'Invoices',business:'My Business'};
+const labels={build:'New invoice',preview:'Invoice desk',saved:'Invoices',business:'My Business'};
 function nav(){for(const target of ['#sideNav','#bottomNav']){const host=$(target);host.innerHTML=Object.keys(labels).map(k=>`<button type="button" data-switch="${k}" class="${tab===k?'active':''}" aria-current="${tab===k?'page':'false'}">${icons[k]}<span>${labels[k]}</span></button>`).join('')}}
-function switchTo(which){if(!labels[which])return;tab=which;$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderReport();renderPaymentCenter()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
+function switchTo(which){if(!labels[which])return;tab=which;if(which==='preview')viewMode='owner';$$('.screen').forEach(el=>el.classList.toggle('active',el.id==='screen-'+which));nav();$('#crumb').textContent=labels[which];if(which==='preview'){renderAudienceMode();renderReport();renderPaymentCenter()}if(which==='saved')renderSaved();if(which==='saved')renderStorageChoice();if(which==='business')renderBusinessSettings();window.scrollTo({top:0,behavior:'instant'})}
 function loadForm(){for(const field of fields){const el=$(`[data-field="${field}"]`);if(el)el.value=(field==='total'||field==='paid')?showMoney(state[field],true):state[field]??''}renderBalance();renderThumbs();renderReport();renderPaymentStatus();renderPaymentCenter();const txt=$('#businessOnInvoice');if(txt)txt.textContent=state.company?'From '+state.company:'Set up your business details under My Business.'}
 function renderStorageChoice(){
  const notice=$('#deviceSaveNotice');
@@ -245,8 +245,26 @@ async function sharePaymentRequest(){
   toast('Unable to share here. Open Safari and try again.');
  }
 }
-function reportMarkup(){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0,fullPacket=Boolean(state.job||state.work||state.summary||state.photos.before.length||state.photos.after.length);const businessLocation=[state.businessCity,state.businessState].filter(Boolean).join(', '),businessAddress=[state.businessAddress,[businessLocation,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}${businessAddress?'<br>'+safe(businessAddress):''}</div></div><div style="text-align:right"><div class="r-label">${fullPacket?"Completion report":"Customer invoice"}</div><div class="r-title">${fullPacket?"Job Packet":"Invoice"}</div><div class="r-badge">${fullPacket?"✓ WORK COMPLETED":balance>0.005?"BALANCE DUE":"✓ PAID"}</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">${fullPacket?'Job details':'Invoice details'}</div><div class="r-value">${dash(state.job||"Services")}</div><div class="r-light">${fullPacket?'Completed':'Issued'}: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}${fullPacket?`<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):"See job description."}</p></section>`:""}${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${balance>0.005&&payableLink()?`<section class="r-payment-link"><p class="pay-label">Pay through Cash App</p><a href="${safe(payableLink())}" target="_blank" rel="noopener noreferrer">${paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →'}</a><p class="pay-explain">${paymentRequestState()==='manual'?'This is a profile link: enter the amount yourself. ':''}Payment is handled by Cash App, not Packet Lily. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
-function renderReport(){$('#report').innerHTML=reportMarkup()}
+function reportMarkup(audience='owner'){const total=num(state.total),paid=num(state.paid),balance=total-paid,credits=balance<0,fullPacket=Boolean(state.job||state.work||state.summary||state.photos.before.length||state.photos.after.length);const businessLocation=[state.businessCity,state.businessState].filter(Boolean).join(', '),businessAddress=[state.businessAddress,[businessLocation,state.businessZip].filter(Boolean).join(' ')].filter(Boolean).join(', ');return `<div class="report-band"></div><div class="report-body"><div class="report-top"><div><div class="r-brand">${dash(state.company)}</div><div class="r-company">${safe(state.phone)}${state.phone&&state.companyEmail?' · ':''}${safe(state.companyEmail)}${businessAddress?'<br>'+safe(businessAddress):''}</div></div><div style="text-align:right"><div class="r-label">${fullPacket?"Completion report":"Customer invoice"}</div><div class="r-title">${fullPacket?"Job Packet":"Invoice"}</div><div class="r-badge">${fullPacket?"✓ WORK COMPLETED":balance>0.005?"BALANCE DUE":"✓ PAID"}</div></div></div><div class="r-details"><div><div class="r-label">Prepared for</div><div class="r-value">${dash(state.customer)}</div><div class="r-light">${dash(state.customerEmail)}<br>${safe(fullAddress()).replace(/\n/g,'<br>')||'—'}</div></div><div><div class="r-label">${fullPacket?'Job details':'Invoice details'}</div><div class="r-value">${dash(state.job||"Services")}</div><div class="r-light">${fullPacket?'Completed':'Issued'}: ${niceDate(state.date)}<br>Reference: ${dash(state.ref)}</div></div></div>${state.summary?`<section class="r-section"><h3>Job overview</h3><p>${safe(state.summary)}</p></section>`:''}${fullPacket?`<section class="r-section"><h3>Work completed</h3><p>${state.work?safe(state.work):"See job description."}</p></section>`:""}${imgSection()}<section class="r-finance"><div><span>Job total</span><strong>${fmt(total)}</strong></div><div><span>Payments received</span><strong>${fmt(paid)}</strong></div><div class="due"><span>${credits?'Customer credit':'Balance due'}</span><strong>${fmt(Math.abs(balance))}</strong></div>${state.due?`<div style="margin:11px 0 0"><span>Payment due by</span><strong>${niceDate(state.due)}</strong></div>`:''}</section>${audience!=='owner'&&balance>0.005&&payableLink()?`<section class="r-payment-link"><p class="pay-label">Pay through Cash App</p>${audience==='customer-export'?'<a href="'+safe(payableLink())+'" target="_blank" rel="noopener noreferrer">'+safe(paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →')+'</a>':'<span class="pay-preview" aria-disabled="true">'+safe(paymentRequestState()==='exact'?'Pay '+fmt(balance)+' with Cash App →':'Open Cash App — enter '+fmt(balance)+' →')+'</span>'}<p class="pay-explain">${audience==='customer-preview'?'Preview only — payment is available in the customer copy sent to their device. ':''}${paymentRequestState()==='manual'?'This is a profile link: enter the amount yourself. ':''}Payment is handled by Cash App, not Packet Lily. Confirm the amount and recipient before approving.</p></section>`:''}${state.notes?`<section class="r-section"><h3>Additional notes</h3><p>${safe(state.notes)}</p></section>`:''}<div class="r-footer"><span>Prepared by ${dash(state.company)}</span><span>${dash(state.ref)} · ${niceDate(state.date)}</span></div></div>`}
+function renderReport(){$('#report').innerHTML=reportMarkup(viewMode==='customer'?'customer-preview':'owner')}
+function renderAudienceMode(){
+ const customer=viewMode==='customer';
+ const host=$('#screen-preview');
+ host.classList.toggle('customer-mode',customer);
+ const center=$('#paymentCenter');center.hidden=customer;
+ $('#customerPreviewNotice').hidden=!customer;
+ $('#ownerViewBtn').classList.toggle('active',!customer);
+ $('#customerViewBtn').classList.toggle('active',customer);
+ $('#ownerViewBtn').setAttribute('aria-pressed',String(!customer));
+ $('#customerViewBtn').setAttribute('aria-pressed',String(customer));
+ $('#audienceExplainer').textContent=customer
+  ?'Customer invoice appearance only. No contractor controls or active payment links are available in this preview.'
+  :'Private contractor workspace. Payment entry and closeout stay here; customers only receive documents you choose to send.';
+}
+function setAudienceMode(mode){
+ viewMode=mode==='customer'?'customer':'owner';
+ renderAudienceMode();renderReport();
+}
 
 /* Owner-confirmed payments: no gateway, bank feed, or provider verification. */
 function activePayments(){return (state.payments||[]).filter(p=>!p.voidedAt)}
@@ -468,9 +486,8 @@ function emailInvoice(){
 }
 function reportFile(){
   // Creates the customer's complete report as an independent, portable HTML file.
-  renderReport();
-  const content=$('#report').innerHTML;
-  if(!content || !$('#report .report-body'))throw new Error('The Job Packet could not be rendered.');
+  const content=reportMarkup('customer-export');
+  if(!content || !content.includes('report-body'))throw new Error('The customer invoice could not be rendered.');
   const css=$('style').textContent;
   const title=(state.ref||state.job||'job-packet').replace(/[^a-z0-9_-]+/gi,'-').replace(/-+$/,'').slice(0,60)||'job-packet';
   const doc=`<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -482,6 +499,14 @@ body{background:#f4f7f6;padding:26px 12px}.report{margin:0 auto}@media print{bod
 Customer copy · Prepared with Packet Lily. For PDF, use your browser’s Print / Save as PDF command.
 </footer></body></html>`;
   return {name:title+'.html',blob:new Blob([doc],{type:'text/html;charset=utf-8'})};
+}
+function printCustomerInvoice(){
+ const report=$('#report'),existing=report.innerHTML;
+ report.innerHTML=reportMarkup('customer-export');
+ let restored=false;
+ const restore=()=>{if(restored)return;restored=true;renderReport()};
+ if(typeof window.addEventListener==='function')window.addEventListener('afterprint',restore,{once:true});
+ try{window.print()}finally{setTimeout(restore,1500)}
 }
 function downloadHTML(){
   let url;
@@ -601,7 +626,10 @@ $('#archiveSearch').addEventListener('input',renderSaved);
 $('#exportArchiveBtn').addEventListener('click',exportArchive);
 $('#importArchiveFile').addEventListener('change',async e=>{await importArchive(e.target.files[0]);e.target.value=''});
 $('#savePacketFileBtn').addEventListener('click',downloadHTML);
-$('#printBtn').addEventListener('click',()=>window.print());
+$('#printBtn').addEventListener('click',printCustomerInvoice);
+$('#ownerViewBtn').addEventListener('click',()=>setAudienceMode('owner'));
+$('#customerViewBtn').addEventListener('click',()=>setAudienceMode('customer'));
+$('#returnToDeskBtn').addEventListener('click',()=>setAudienceMode('owner'));
 $('#copyBtn').addEventListener('click',copySummary);
 $('#saveBtn').addEventListener('click',()=>savePacket(false));
 $('#blankBtn').addEventListener('click',beginNewInvoice);
