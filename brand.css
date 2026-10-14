@@ -421,3 +421,6 @@ html{scroll-padding-bottom:calc(120px + env(safe-area-inset-bottom))}
 input,textarea,select{scroll-margin-top:75px;scroll-margin-bottom:calc(125px + env(safe-area-inset-bottom))}
 @media(max-width:680px){#screen-build,#screen-business,#screen-preview,#screen-saved{padding-bottom:calc(25px + env(safe-area-inset-bottom))}}
 @media(prefers-reduced-motion:reduce){.btn,.home-guide,.audience-option,.bottomnav button,.archive-status-tab,.workflow-progress span{transition:none!important;animation:none!important}button:not(:disabled):active{transform:none}}
+
+/* Consistent controls across iPhone system light/dark settings; optional dark theme requires full design QA. */
+:root{color-scheme:light}
