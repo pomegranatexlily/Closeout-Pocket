@@ -156,10 +156,14 @@
 <div class="field span"><label for="businessName">Business name</label><input id="businessName" maxlength="300" autocomplete="organization" placeholder="Your business name"></div>
 <div class="field"><label for="businessPhone">Business phone (optional)</label><input id="businessPhone" type="tel" autocomplete="tel" placeholder="Phone number"></div>
 <div class="field"><label for="businessEmail">Business email (optional)</label><input id="businessEmail" type="email" autocomplete="email" placeholder="email@business.com"></div>
+<div class="field span"><label for="businessStreet">Business street / mailing address (optional)</label><input id="businessStreet" autocomplete="street-address" placeholder="123 Main Street"></div>
+<div class="field"><label for="businessCity">Business city</label><input id="businessCity" autocomplete="address-level2" placeholder="Dallas"></div>
+<div class="field"><label for="businessState">Business state</label><input id="businessState" autocomplete="address-level1" maxlength="30" placeholder="TX"></div>
+<div class="field span"><label for="businessZip">Business ZIP / postal code</label><input id="businessZip" autocomplete="postal-code" maxlength="20" placeholder="75201"></div>
 <div class="field span"><label for="defaultCashApp">Cash App receiving account (optional)</label><input id="defaultCashApp" autocomplete="off" spellcheck="false" placeholder="$YourCashtag or https://cash.app/$YourCashtag"><small>Use a reusable Cash App profile, not an amount-specific request. Customers enter the amount manually when paying by profile link.</small></div>
 </div>
 <small id="defaultCashStatus" role="status" aria-live="polite"></small>
-<div class="action-bar"><button class="btn primary" id="saveBusinessBtn">Save business details</button><button class="btn" id="applyBusinessBtn">Apply to current invoice</button><button class="btn small" data-new-invoice>New invoice →</button></div>
+<div class="action-bar"><button class="btn primary" id="saveBusinessBtn">Save business details</button><button class="btn danger small" id="clearBusinessBtn">Clear saved profile</button><button class="btn" id="applyBusinessBtn">Apply to current invoice</button><button class="btn small" data-new-invoice>New invoice →</button></div>
 <p class="help">Business details are saved on this device, not the cloud. Updating them never silently changes existing archived invoices.</p>
 </section></section>
 <section id="screen-preview" class="screen">
