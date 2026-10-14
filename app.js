@@ -56,7 +56,13 @@ function normalize(v){
    const parts=o.address.match(/^(.+),\s*([^,]+),\s*([A-Za-z]{2})(?:\s+(\d{5}(?:-\d{4})?))?$/);
    if(parts){o.address=parts[1];o.city=parts[2];o.stateCode=parts[3].toUpperCase();o.zip=parts[4]||''}
  }
- o.photos={before:Array.isArray(v?.photos?.before)?v.photos.before:[],after:Array.isArray(v?.photos?.after)?v.photos.after:[]};
+ const photoList=items=>Array.isArray(items)?items.slice(0,4).filter(p=>p&&typeof p==='object'&&typeof p.data==='string'&&p.data.length<2000000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(p.data)).map(p=>({data:p.data,name:String(p.name||'photo').slice(0,120)})):[];
+ o.photos={before:photoList(v?.photos?.before),after:photoList(v?.photos?.after)};
+ for(const field of fields){
+  if(field==='total'||field==='paid')continue;
+  const limit=['work','summary','notes'].includes(field)?10000:300;
+  o[field]=String(o[field]??'').slice(0,limit);
+ }
  o.total=cleanMoney(o.total);o.paid=cleanMoney(o.paid);o.paymentRequestAmount=cleanMoney(o.paymentRequestAmount);
  return o;
 }
@@ -241,6 +247,8 @@ function emailInvoice(){
   toast('Enter a valid customer email address.');
   switchTo('build');field.focus();return;
  }
+ const status=paymentRequestState();
+ if(status==='stale'||status==='unconfirmed'){toast('Update and confirm the Cash App request before emailing.');switchTo('build');$('#paymentLink').focus();return}
  const bal=num(state.total)-num(state.paid);
  const subject='Invoice '+(state.ref||state.job||'Service')+' — '+(state.company||'Closeout Pocket');
  const body=[
@@ -326,7 +334,7 @@ function generatePacket(){
 }
 async function copySummary(){const total=num(state.total),paid=num(state.paid),balance=total-paid;const content=[`${state.company||'Service completion'} — Job Packet`,`Customer: ${state.customer||'—'}`,`Service address: ${fullAddress()||'—'}`,`Job: ${state.job||'—'}`,`Completed: ${niceDate(state.date)}`,`Work completed:\n${state.work||'—'}`,`Job total: ${fmt(total)}`,`Paid: ${fmt(paid)}`,`${balance<0?'Customer credit':'Balance due'}: ${fmt(Math.abs(balance))}`,state.notes?`Notes: ${state.notes}`:''].filter(Boolean).join('\n\n');try{await navigator.clipboard.writeText(content);toast('Summary copied to clipboard')}catch(e){const t=document.createElement('textarea');t.value=content;t.style.position='fixed';t.style.left='-9999px';document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('Summary copied to clipboard')}catch(e){toast('Copy unavailable in this browser')}t.remove()}}
 function startOver(next){state=next;loadForm();autosave();switchTo('build')}
-document.addEventListener('input',e=>{
+function updateFieldFromInput(e){
  const el=e.target;if(!el.dataset.field)return;
  const field=el.dataset.field;
  const oldBalance=Math.round((num(state.total)-num(state.paid))*100);
@@ -335,7 +343,9 @@ document.addEventListener('input',e=>{
  if((field==='total'||field==='paid')&&oldBalance!==Math.round((num(state.total)-num(state.paid))*100)&&state.paymentRequestConfirmed)state.paymentLinkNeedsRefresh=true;
  if(field==='paymentLink'&&oldLink!==state.paymentLink){state.paymentRequestConfirmed=false;state.paymentRequestAmount='';state.paymentRequestConfirmedLink='';state.paymentLinkNeedsRefresh=false}
  renderBalance();renderReport();renderPaymentStatus();autosave();
-});
+}
+document.addEventListener('input',updateFieldFromInput);
+document.addEventListener('change',updateFieldFromInput);
 document.addEventListener('blur',e=>{
  const el=e.target;
  if(el.dataset.field==='total'||el.dataset.field==='paid'){
@@ -353,6 +363,12 @@ $('#eraseDeviceBtn').addEventListener('click',eraseDeviceData);
 $('#previewBtn').addEventListener('click',generatePacket);
 $('#sharePacketBtn').addEventListener('click',shareReport);
 $('#emailInvoiceBtn').addEventListener('click',emailInvoice);
+$('#copyCashRequestBtn').addEventListener('click',async()=>{
+ const amount=fmt(Math.max(0,num(state.total)-num(state.paid)));
+ const note=(state.ref||'Invoice')+' · '+(state.job||'Service');
+ const message='Request amount: '+amount+'\nCash App note: '+note;
+ try{await navigator.clipboard.writeText(message);toast('Exact request amount and note copied. Open Cash App → Request.')}catch(e){toast('Copy unavailable. Request '+amount+' in Cash App.')}
+});
 $('#confirmPaymentAmount').addEventListener('change',e=>{
  if(!e.target.checked){state.paymentRequestConfirmed=false;state.paymentRequestAmount='';state.paymentRequestConfirmedLink=''}
  else if(paymentRequestState()==='unconfirmed'){
