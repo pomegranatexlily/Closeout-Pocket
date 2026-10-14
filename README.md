@@ -5,6 +5,18 @@
 ### Packet Lily design
 Deep violet, soft lilac, ivory and gold form the premium design system. The stacked packet and lily seal appear on the app icon, the workspace, and the install screen. All existing invoice storage identifiers remain unchanged for backwards compatibility.
 
+### Mobile reliability and free browser QA (v3.9)
+
+Packet Lily keeps its existing static GitHub Pages architecture and does not require a paid AI platform or web server to run. Quality changes in this version:
+
+- Local payment-record entry prevents rapid double taps and rejects a reused transaction reference on the same invoice/payment method; legitimate separate transactions with different references still work. This prevents double **bookkeeping entries** only. Cash App processes actual money; Packet Lily cannot cancel, refund, or detect duplicate Cash App transfers.
+- Reopening the same amount-specific request for sharing within 24 hours prompts for confirmation, to help prevent accidentally asking a customer twice. Packet Lily records only an opened share sheet, **not** delivery or payment; copying text alone does not mark a request as sent.
+- Mobile tap feedback, disabled-button states, reduced-motion support, input scroll spacing and an offline status indicator improve the iPhone experience. In-app error/empty states are preserved; the app avoids fake loading skeletons for instant local actions.
+- GitHub Actions now runs existing no-dependency smoke tests plus a separate **development-only Playwright** test suite in mobile Chromium and iPhone WebKit. The tests use invented data and cover required invoice steps, archive statuses, duplicate bookkeeping prevention, PDF receipt downloads, and draft preservation. A Chromium test also checks the static offline shell.
+- The Playwright dependency is installed only in CI or local developer testing; it is **not shipped to customers** or needed for static GitHub Pages hosting.
+
+To run the browser tests on a developer computer (optional): `npm install`, `npx playwright install --with-deps chromium webkit`, and `npm run test:browser`. Normal app usage remains server-free and has no Node.js requirement.
+
 ### Guided invoice workflow (v3.8)
 
 Packet Lily now gates actions **per invoice**, rather than making the operator navigate freely through unready document screens. The workflow is **Draft → Invoice ready → Awaiting / partially paid → Payment recorded in full → Owner-confirmed closeout**. The New invoice form shows a live required-fields checklist for business name, customer name and positive amount. The invoice desk cannot open until a valid invoice has been generated; older saved invoices are migrated carefully without changing their underlying invoice and payment data. The customer invoice can be shared while unpaid, as it must be for payment collection, but opening it does not prove it was sent or paid.
