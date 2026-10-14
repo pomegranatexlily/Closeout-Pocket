@@ -201,7 +201,7 @@
   </nav>
   <p id="audienceExplainer">Manage the job here. Open Payments or Receipts only when needed; Customer copy is a separate read-only preview.</p>
 </div>
-<div class="preview-toolbar"><div><h2>Invoice overview</h2><p>All your invoice details and next actions, without the extra screens.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn primary small" id="printBtn">Print customer invoice / PDF</button></div></div>
+<div class="preview-toolbar"><div><h2>Invoice overview</h2><p>All your invoice details and next actions, without the extra screens.</p></div><div class="preview-actions"><button class="btn small" data-switch="build">← Edit</button><button class="btn small" id="copyBtn">Copy summary</button><button class="btn primary small" id="printBtn">Save / Print invoice PDF</button></div></div>
 <div id="customerPreviewNotice" class="customer-preview-notice" hidden><strong>Customer copy preview — not a payment screen.</strong><p>This is how your customer’s invoice looks. The Cash App control is disabled in this preview. It is a working payment link only in the standalone file or request sent to the customer’s device.</p><button class="btn small" type="button" id="returnToDeskBtn">← Back to contractor desk</button></div>
 <section class="payment-center" id="paymentCenter" aria-labelledby="paymentsHeading">
   <div class="desk-pane" id="deskOverview">
@@ -239,7 +239,7 @@
    <div class="desk-pane-heading"><span class="payment-eyebrow">CUSTOMER DOCUMENTS</span><h3>Receipts</h3><p>Select a recorded payment to open its receipt, then save it as PDF or share it.</p></div>
    <div class="receipt-empty" id="receiptEmpty">No receipt selected yet. Open Payments and choose Receipt next to a recorded payment.</div>
   <section id="receiptPanel" class="receipt-panel" hidden>
-    <div class="receipt-toolbar"><div><span class="payment-eyebrow">CUSTOMER COPY</span><h4>Payment receipt</h4></div><div class="receipt-buttons"><button type="button" class="btn small" id="shareReceiptBtn">Share PDF</button><button type="button" class="btn primary small" id="downloadReceiptBtn">Save PDF receipt</button><button type="button" class="btn small" id="printReceiptBtn">Print</button></div></div>
+    <div class="receipt-toolbar"><div><span class="payment-eyebrow">CUSTOMER COPY</span><h4>Payment receipt</h4></div><div class="receipt-buttons"><button type="button" class="btn small" id="shareReceiptBtn">Share PDF</button><button type="button" class="btn primary small" id="downloadReceiptBtn">Save PDF receipt</button><button type="button" class="btn small" id="printReceiptBtn">Print PDF</button></div></div>
     <article id="receiptDocument" class="receipt-sheet" aria-label="Receipt recorded by the business owner"></article>
   </section>
   </div>
@@ -254,7 +254,7 @@
 </section>
 <div id="archiveStats" class="archive-stats"></div><div id="savedList"></div>
 <section class="privacy-notice" id="privacySettings"><h3>Privacy &amp; device storage</h3><p id="storageStateText"></p><div class="action-bar"><button type="button" class="btn small" id="toggleDeviceSaveBtn">Change saving preference</button><button type="button" class="btn danger small" id="eraseDeviceBtn">Erase all local invoices and drafts</button><a class="btn small" href="privacy.html">Privacy details</a></div><p class="help">No analytics, advertising trackers, or nonessential cookies are used. Your archive is not a secure multi-device business database.</p></section><p class="help">Your archive is stored only in this browser, not in a cloud account. Regularly export a backup to your iPhone Files app. Clearing Safari website data or switching devices can erase saved records. Opening an email draft does not prove delivery.</p></section>
-<p class="copyright">Packet Lily · Pomegranate × Lily · v3.6 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
+<p class="copyright">Packet Lily · Pomegranate × Lily · v3.7 · No account required · <a href="privacy.html">Privacy &amp; data</a></p>
 </main></div>
 <nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="filing.js" defer></script><script src="app.js" defer></script>
