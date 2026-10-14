@@ -1,5 +1,5 @@
 /* Closeout Pocket: cache only public app shell. Never cache customer data, exports or remote content. */
-const CACHE='closeout-shell-v1.8';
+const CACHE='closeout-shell-v2.0';
 const ROOT='/Closeout-Pocket/';
 const ASSETS=[ROOT,ROOT+'index.html',ROOT+'app.js',ROOT+'icon.svg',ROOT+'privacy.html',ROOT+'manifest.webmanifest'];
 self.addEventListener('install',event=>{
