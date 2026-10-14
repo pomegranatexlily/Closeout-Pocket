@@ -136,6 +136,10 @@
 <div class="field span"><label for="customer">Customer name</label><input id="customer" data-field="customer" autocomplete="name" placeholder="Customer name"></div>
 <div class="field span"><label for="total">Invoice amount ($)</label><input id="total" data-field="total" type="text" inputmode="decimal" autocomplete="off" placeholder="$0.00" aria-describedby="moneyHelp"></div>
 </div>
+<div class="required-steps" id="requiredSteps" aria-live="polite">
+ <div class="required-steps-head"><strong>Before you can continue</strong><span id="requiredProgress">0 / 3 ready</span></div>
+ <div class="required-checks"><span data-required-check="business">○ Business profile</span><span data-required-check="customer">○ Customer</span><span data-required-check="amount">○ Invoice amount</span></div>
+</div>
 <div class="summary-strip"><div class="sum-row"><span>Invoice total</span><strong id="liveTotal">$0.00</strong></div><div class="sum-row"><span>Payments received</span><strong id="livePaid">$0.00</strong></div><div class="sum-row total"><span id="balanceLabel">Balance due</span><strong id="liveBalance">$0.00</strong></div></div>
 <div class="action-bar"><button class="btn primary" id="previewBtn">Generate invoice →</button><button class="btn" id="saveBtn">Save to archive</button><button class="btn small" id="blankBtn">New invoice</button></div>
 <p class="help">Only mark money paid when you actually receive it. Cash App payments are recorded manually.</p>
