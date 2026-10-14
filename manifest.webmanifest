@@ -1,0 +1,24 @@
+{
+  "id": "/Closeout-Pocket/",
+  "name": "Closeout Pocket",
+  "short_name": "Closeout",
+  "description": "Professional job completion reports, invoices and customer payment requests.",
+  "start_url": "/Closeout-Pocket/",
+  "scope": "/Closeout-Pocket/",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#101f30",
+  "lang": "en",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
