@@ -241,3 +241,5 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-vi
  body.print-receipt .receipt-sheet{max-width:100%!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
  body.print-receipt .receipt-top{print-color-adjust:exact;-webkit-print-color-adjust:exact}
 }
+
+@media print{body:not(.print-receipt) .payment-center{display:none!important}}
