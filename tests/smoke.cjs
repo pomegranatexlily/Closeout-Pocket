@@ -145,5 +145,7 @@ assert.equal(old.payments[0].source,'legacy','old paid amount becomes labeled le
 assert.equal(old.payments[0].verifiedByOwner,false,'old payments cannot be deemed verified');
 assert.equal(app.normalize(old).payments.length,1,'migration must be idempotent');
 console.log('Packet Lily payment ledger and closeout smoke tests passed.');
-assert(index.includes('Customer preview'));
+assert(index.includes('Customer copy'));
+assert(index.includes('id="deskPayments"'));
+assert(index.includes('id="deskReceipts"'));
 console.log('Contractor/customer view separation and compact invoice sections passed.');
