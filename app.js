@@ -247,6 +247,13 @@ function clearBusinessSettings(){
  try{localStorage.removeItem(K_BUSINESS);localStorage.removeItem(K_PAYMENT_ACCOUNT)}catch(e){toast('Could not remove the business profile.');return}
  businessProfile=businessFrom({});defaultCashAppLink='';renderBusinessSettings();toast('Saved business profile cleared. Existing invoices are unchanged.');
 }
+function updateConnectivityUI(){
+ const badge=$('#connectivityBadge');if(!badge)return;
+ const offline=navigator.onLine===false;
+ badge.textContent=offline?'●  Offline · local workspace':'●  On-device workspace';
+ badge.dataset.offline=offline?'true':'false';
+ badge.title=offline?'Device reports offline. Drafts and cached features may work; sending requests requires a connection.':'Invoices and records are stored locally when device saving is enabled.';
+}
 function renderRequiredSteps(){
  const checks=[['business',Boolean(state.company?.trim()),'Business profile'],['customer',Boolean(state.customer?.trim()),'Customer'],['amount',cents(state.total)>0,'Invoice amount']];
  let done=0;
@@ -1017,6 +1024,7 @@ $('#copyBtn').addEventListener('click',copySummary);
 $('#saveBtn').addEventListener('click',()=>savePacket(false));
 $('#blankBtn').addEventListener('click',beginNewInvoice);
 $('#demoBtn').addEventListener('click',()=>startOver(demo()));
-loadForm();nav();renderStorageChoice();renderBusinessSettings();switchTo('home');
+loadForm();nav();renderStorageChoice();renderBusinessSettings();switchTo('home');updateConnectivityUI();
+ if(typeof window.addEventListener==='function'){window.addEventListener('online',updateConnectivityUI);window.addEventListener('offline',updateConnectivityUI)}
 if('serviceWorker' in navigator && window.isSecureContext){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
 })();
