@@ -9,7 +9,7 @@ assert(fs.readFileSync('brand.css','utf8').includes('.payment-center'));
 assert(manifest.name==='Packet Lily');
 assert(script.includes("['Closeout Pocket','Packet Lily']"),'old archives remain importable');
 assert(script.includes('closeout-pocket-draft-v1'),'old browser drafts remain available');
-for(const id of ['recordPaymentForm','closeInvoiceBtn','reopenInvoiceBtn','receiptDocument','paymentLog','sharePaymentBtn','confirmPaymentAmount'])assert(index.includes('id="'+id+'"'),id+' is missing');
+for(const id of ['ownerViewBtn','customerViewBtn','customerPreviewNotice','returnToDeskBtn','recordPaymentForm','closeInvoiceBtn','reopenInvoiceBtn','receiptDocument','paymentLog','sharePaymentBtn','confirmPaymentAmount'])assert(index.includes('id="'+id+'"'),id+' is missing');
 assert(index.includes('src="app.js" defer'));
 assert(manifest.start_url==='/Closeout-Pocket/');
 assert(fs.readFileSync('apple-touch-icon.png').subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')));
@@ -17,9 +17,9 @@ assert(!/document\.cookie\s*=|https?:\/\/(google-analytics|www\.googletagmanager
 new Function(script);
 const seam='loadForm();nav();renderStorageChoice();';
 assert(script.includes(seam));
-const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize};');
+const source=script.replace(seam,'return {getState:()=>state,getSaved:()=>saved,getSaving:()=>deviceSaving,chooseDeviceSaving,generatePacket,paymentRequestState,renderReport,renderPaymentCenter,recordPayment,closeInvoice,reopenInvoice,voidPayment,currentReceipt,normalize,reportMarkup,reportFile,setAudienceMode,receiptText};');
 const events={},els=new Map();
-function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){}});return els.get(key)}
+function element(key){if(!els.has(key))els.set(key,{value:'',hidden:false,checked:false,disabled:false,innerHTML:'',textContent:'',dataset:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},scrollIntoView(){},focus(){},checkValidity(){return true},setSelectionRange(){},setAttribute(name,value){this[name]=value}});return els.get(key)}
 const screens=['build','preview','saved','business'].map(name=>({id:'screen-'+name,active:name==='build',classList:{toggle(flag,on){if(flag==='active')this.owner.active=on},owner:null}}));
 for(const screen of screens)screen.classList.owner=screen;
 const doc={querySelector:element,querySelectorAll:selector=>selector==='.screen'?screens:[],addEventListener:(event,handler)=>events[event]=handler,createElement:()=>({click(){},remove(){}}),body:{appendChild(){},classList:{add(){},remove(){}}}};
@@ -35,6 +35,8 @@ assert(screens.find(v=>v.id==='screen-business').active,'business screen must be
 assert(!screens.find(v=>v.id==='screen-build').active,'previous screen must be hidden');
 tapTab('preview');
 assert(screens.find(v=>v.id==='screen-preview').active,'preview must remain navigable');
+assert.equal(element('#paymentCenter').hidden,false,'contractor desk is default');
+assert.equal(element('#customerPreviewNotice').hidden,true,'customer-only notice is hidden on contractor desk');
 tapTab('saved');
 assert(screens.find(v=>v.id==='screen-saved').active,'invoice archive must remain navigable');
 tapTab('build');
@@ -49,7 +51,22 @@ assert.equal(app.getSaved().length,1);
 state.paymentLink='https://cash.app/pay/unique-request';
 state.paymentRequestConfirmed=true;state.paymentRequestAmount='250';state.paymentRequestConfirmedLink=state.paymentLink;state.paymentLinkNeedsRefresh=false;
 assert.equal(app.paymentRequestState(),'exact');
-app.renderReport();assert(element('#report').innerHTML.includes('Pay $250.00 with Cash App'));
+app.renderReport();
+assert(!element('#report').innerHTML.includes('r-payment-link'),'contractor desk never has customer payment button');
+app.setAudienceMode('customer');
+assert(element('#paymentCenter').hidden,'owner payment controls hidden in customer preview');
+assert(!element('#customerPreviewNotice').hidden,'customer preview distinctly labeled');
+const customerPreview=element('#report').innerHTML;
+assert(customerPreview.includes('pay-preview'),'customer sees a non-clickable CTA demonstration');
+assert(!customerPreview.includes('href="https://cash.app/'),'customer preview must not let contractor accidentally open Cash App');
+const exportedCustomer=app.reportMarkup('customer-export');
+assert(exportedCustomer.includes('href="https://cash.app/$Example')===false,'invoice-specific link should be used');
+assert(exportedCustomer.includes('href="https://cash.app/pay/unique-request'),'shared customer copy retains valid payment link');
+assert(!exportedCustomer.includes('payment-center')&&!exportedCustomer.includes('payment-log'),'no contractor controls in customer copy');
+assert(!exportedCustomer.includes('data-void-payment'),'no payment records in customer copy');
+app.setAudienceMode('owner');
+assert(!element('#paymentCenter').hidden,'returning to desk restores owner tools');
+assert(!element('#report').innerHTML.includes('r-payment-link'),'owner view still has no payment CTA');
 const currentDate=new Date();const date=[currentDate.getFullYear(),String(currentDate.getMonth()+1).padStart(2,'0'),String(currentDate.getDate()).padStart(2,'0')].join('-');
 function enterPayment(amount,ref){
  element('#payEntryAmount').value=amount;
@@ -69,6 +86,10 @@ assert(!element('#report').innerHTML.includes('r-payment-link'),'hide stale amou
 assert(!element('#receiptPanel').hidden,'receipt should become visible');
 assert(element('#receiptDocument').innerHTML.includes('$100.00'));
 assert(element('#receiptDocument').innerHTML.includes('did not independently verify'));
+state.payments[0].note='PRIVATE NOT FOR CUSTOMER';
+app.renderPaymentCenter();
+assert(!element('#receiptDocument').innerHTML.includes('PRIVATE NOT FOR CUSTOMER'),'internal payment note must never appear on receipt');
+assert(!app.receiptText(state.payments[0]).includes('PRIVATE NOT FOR CUSTOMER'),'shared receipt must exclude private note');
 assert.equal(element('#invoicePaymentStatus').textContent,'Partially paid');
 enterPayment('150','TEST-PAID-2');
 assert.equal(state.paid,'250.00');
@@ -92,3 +113,5 @@ assert.equal(old.payments[0].source,'legacy','old paid amount becomes labeled le
 assert.equal(old.payments[0].verifiedByOwner,false,'old payments cannot be deemed verified');
 assert.equal(app.normalize(old).payments.length,1,'migration must be idempotent');
 console.log('Packet Lily payment ledger and closeout smoke tests passed.');
+assert(index.includes('Customer preview'));
+console.log('Contractor/customer view separation tests passed.');
