@@ -12,6 +12,17 @@ on:
       - 'package.json'
       - 'playwright.config.mjs'
       - '.github/workflows/browser-qa.yml'
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'brand.css'
+      - 'filing.js'
+      - 'sw.js'
+      - 'tests/**'
+      - 'package.json'
+      - 'playwright.config.mjs'
+      - '.github/workflows/browser-qa.yml'
   workflow_dispatch:
 concurrency:
   group: packet-lily-mobile-tests
@@ -28,7 +39,11 @@ jobs:
         with:
           node-version: '22'
       - name: Install pinned testing tools (dev only)
-        run: npm install --no-audit --no-fund
+        run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Validate installed dependencies and block high-severity known vulnerabilities
+        run: |
+          npm ls --depth=0
+          npm audit --audit-level=high
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
       - name: Test simulated Android and iPhone invoice flows
