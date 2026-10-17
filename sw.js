@@ -1,7 +1,7 @@
 /* Packet Lily: cache only public app shell. Never cache customer data, exports or remote content. */
-const CACHE='packet-lily-shell-v4.1.0';
+const CACHE='packet-lily-shell-v4.1.0-icon-poster-20261017';
 const ROOT='/Closeout-Pocket/';
-const ASSETS=[ROOT,ROOT+'index.html',ROOT+'app.js',ROOT+'filing.js',ROOT+'brand.css',ROOT+'icon.svg',ROOT+'apple-touch-icon.png',ROOT+'privacy.html',ROOT+'manifest.webmanifest'];
+const ASSETS=[ROOT,ROOT+'index.html',ROOT+'app.js',ROOT+'filing.js',ROOT+'brand.css',ROOT+'icon.svg',ROOT+'favicon-32.png',ROOT+'icon-192.png',ROOT+'icon-512.png',ROOT+'apple-touch-icon.png',ROOT+'privacy.html',ROOT+'manifest.webmanifest'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });
@@ -15,5 +15,5 @@ self.addEventListener('fetch',event=>{
  event.respondWith(fetch(req).then(response=>{
   if(response.ok&&response.type==='basic'){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(req,copy)))}
   return response;
- }).catch(()=>caches.match(req)));
+ }).catch(()=>caches.match(req,{ignoreSearch:true})));
 });
