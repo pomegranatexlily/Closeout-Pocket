@@ -18,6 +18,12 @@ for(const match of index.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi
  scriptRefs++;
 }
 assert(scriptRefs>=2,'Dependency check did not inspect the app scripts');
+// The test server must serve every public asset installed by the offline worker.
+const offlineWorker=fs.readFileSync('sw.js','utf8');
+const browserServer=fs.readFileSync('tests/serve.cjs','utf8');
+for(const match of offlineWorker.matchAll(/ROOT\+'([^']+)'/g)){
+ assert(browserServer.includes("'"+match[1]+"'"),'Browser-test server omits an offline shell asset: '+match[1]);
+}
 assert(index.includes("script-src 'self'"),'CSP must keep executable scripts first-party only');
 assert(index.includes('Content-Security-Policy'));
 assert(index.includes('Packet Lily'));
