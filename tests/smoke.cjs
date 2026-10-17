@@ -8,6 +8,15 @@ const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
 assert.deepEqual(pkg.dependencies||{}, {}, 'Packet Lily browser runtime must remain dependency-free unless explicitly reviewed');
 assert.deepEqual(Object.keys(pkg.devDependencies||{}), ['@playwright/test'], 'New npm packages require a deliberate review of the allowlist');
 assert.match(pkg.devDependencies['@playwright/test'], /^\d+\.\d+\.\d+$/, 'Pin Playwright to a reviewed exact version');
+const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+assert.equal(lock.lockfileVersion,3,'Lockfile format is required to be version 3');
+assert.deepEqual(lock.packages[''].devDependencies,pkg.devDependencies,'Locked root dependencies must exactly match package.json');
+for(const [name,entry] of Object.entries(lock.packages)){
+ if(!name)continue;
+ assert(/^sha512-/.test(entry.integrity||''),'Missing package integrity hash: '+name);
+ assert(/^https:\/\/registry\.npmjs\.org\//.test(entry.resolved||''),'Unexpected package source: '+name);
+ assert(/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(entry.version||''),'Non-exact locked version: '+name);
+}
 let scriptRefs=0;
 for(const match of index.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)){
  const src=match[1],uri=new URL(src,'https://packet.invalid/Closeout-Pocket/');
