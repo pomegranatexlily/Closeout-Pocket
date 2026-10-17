@@ -128,9 +128,12 @@ test('static shell and a draft stay usable after going offline',async({page,cont
  await page.goto('./');
  const ready=await page.evaluate(async()=>{
   if(!('serviceWorker'in navigator))return false;
-  await navigator.serviceWorker.ready;return true;
+  return Promise.race([
+   navigator.serviceWorker.ready.then(()=>true),
+   new Promise(resolve=>setTimeout(()=>resolve(false),8000))
+  ]);
  });
- expect(ready).toBe(true);
+ expect(ready,'The service worker did not activate within 8 seconds; inspect cache asset paths and server responses.').toBe(true);
  await page.reload();
  await context.setOffline(true);
  await page.reload({waitUntil:'domcontentloaded',timeout:20000});

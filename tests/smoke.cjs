@@ -3,6 +3,28 @@ const index=fs.readFileSync('index.html','utf8');
 const script=fs.readFileSync('app.js','utf8');
 const filingScript=fs.readFileSync('filing.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8'));
+// Release policy: missing or unexpected script/package references must fail CI.
+const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+assert.deepEqual(pkg.dependencies||{}, {}, 'Packet Lily browser runtime must remain dependency-free unless explicitly reviewed');
+assert.deepEqual(Object.keys(pkg.devDependencies||{}), ['@playwright/test'], 'New npm packages require a deliberate review of the allowlist');
+assert.match(pkg.devDependencies['@playwright/test'], /^\d+\.\d+\.\d+$/, 'Pin Playwright to a reviewed exact version');
+let scriptRefs=0;
+for(const match of index.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)){
+ const src=match[1],uri=new URL(src,'https://packet.invalid/Closeout-Pocket/');
+ assert.equal(uri.origin,'https://packet.invalid','No unreviewed CDN/third-party script: '+src);
+ assert(uri.pathname.startsWith('/Closeout-Pocket/'),'Script must remain inside this application: '+src);
+ const local=decodeURIComponent(uri.pathname.slice('/Closeout-Pocket/'.length));
+ assert(fs.statSync(local,{throwIfNoEntry:false})?.isFile(),'Referenced script is missing: '+src);
+ scriptRefs++;
+}
+assert(scriptRefs>=2,'Dependency check did not inspect the app scripts');
+// The test server must serve every public asset installed by the offline worker.
+const offlineWorker=fs.readFileSync('sw.js','utf8');
+const browserServer=fs.readFileSync('tests/serve.cjs','utf8');
+for(const match of offlineWorker.matchAll(/ROOT\+'([^']+)'/g)){
+ assert(browserServer.includes("'"+match[1]+"'"),'Browser-test server omits an offline shell asset: '+match[1]);
+}
+assert(index.includes("script-src 'self'"),'CSP must keep executable scripts first-party only');
 assert(index.includes('Content-Security-Policy'));
 assert(index.includes('Packet Lily'));
 assert(index.includes('href="brand.css"'));
@@ -231,6 +253,31 @@ assert.equal(old.payments[0].source,'legacy','old paid amount becomes labeled le
 assert.equal(old.payments[0].verifiedByOwner,false,'old payments cannot be deemed verified');
 assert.equal(app.normalize(old).payments.length,1,'migration must be idempotent');
 console.log('Packet Lily payment ledger and closeout smoke tests passed.');
+// Seeded property-based invariants: money never comes from a forged paid field,
+// voided payments do not count, and reloading cannot change the balance.
+let propertySeed=0x5eed2026;
+const nextProperty=()=>{propertySeed=(Math.imul(propertySeed,1664525)+1013904223)>>>0;return propertySeed};
+for(let trial=0;trial<250;trial++){
+ const totalCents=1+(nextProperty()%500000),first=1+(nextProperty()%totalCents);
+ const second=nextProperty()%(totalCents-first+1),voidSecond=(nextProperty()&1)===1;
+ const expectedCents=first+(voidSecond?0:second);
+ const amount=value=>(value/100).toFixed(2);
+ const normalized=app.normalize({
+  company:'Property test',customer:'Test',total:amount(totalCents),paid:'999999.99',
+  closedAt:'2026-10-13T12:00:00.000Z',preparedAt:'2026-10-13T12:00:00.000Z',
+  payments:[
+   {id:'one',amount:amount(first),date:'2026-10-13',source:'owner',verifiedByOwner:true},
+   {id:'two',amount:amount(second),date:'2026-10-13',source:'owner',verifiedByOwner:true,
+    voidedAt:voidSecond?'2026-10-13T12:00:00.000Z':''},
+   {id:'zero',amount:'0.00',date:'2026-10-13',source:'owner',verifiedByOwner:true}
+  ]
+ });
+ assert.equal(normalized.paid,amount(expectedCents),'active ledger cents must determine the paid balance on trial '+trial);
+ assert.equal(app.normalize(normalized).paid,normalized.paid,'reload must not change the balance on trial '+trial);
+ assert.equal(Boolean(normalized.closedAt),expectedCents===totalCents,'closeout may remain only if fully funded on trial '+trial);
+ assert(!normalized.payments.some(p=>p.id==='zero'),'zero-valued payments cannot become ledger entries');
+}
+console.log('250 seeded money-ledger invariants passed.');
 assert(index.includes('Customer copy'));
 assert(index.includes('id="filingMonth"'),'month picker must exist in invoice archive');
 assert(index.includes('id="saveMonthZipBtn"'),'month folder download must exist');
