@@ -1,7 +1,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),prefix='/Closeout-Pocket/',port=Number(process.env.PORT||4173);
 const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json','.json':'application/json'};
-const publicFiles=new Set(['index.html','app.js','filing.js','brand.css','sw.js','manifest.webmanifest','privacy.html','404.html','icon.svg','apple-touch-icon.png']);
+const publicFiles=new Set(['index.html','app.js','filing.js','brand.css','sw.js','manifest.webmanifest','privacy.html','404.html','icon.svg','favicon-32.png','icon-192.png','icon-512.png','apple-touch-icon.png']);
 http.createServer((req,res)=>{
  const url=new URL(req.url,'http://127.0.0.1:'+port);
  if(!['GET','HEAD'].includes(req.method)||(!url.pathname.startsWith(prefix)&&url.pathname!=='/')){res.writeHead(404);return res.end()}
