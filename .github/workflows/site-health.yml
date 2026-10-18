@@ -31,6 +31,9 @@ jobs:
               && curl --fail --location --retry 2 --retry-delay 2 --max-time 20 --silent --show-error "${SITE_URL}app.js" -o /tmp/packet-lily-app.js \
               && curl --fail --location --retry 2 --retry-delay 2 --max-time 20 --silent --show-error "${SITE_URL}sw.js" -o /tmp/packet-lily-sw.js \
               && grep -q 'Packet Lily' /tmp/packet-lily-home.html \
+              && grep -q 'property="og:image"' /tmp/packet-lily-home.html \
+              && grep -q 'https://pomegranatexlily.github.io/Closeout-Pocket/icon-512.png' /tmp/packet-lily-home.html \
+              && curl --fail --location --max-time 20 --silent --show-error "${SITE_URL}icon-512.png" -o /tmp/packet-lily-share-icon.png \
               && cmp -s index.html /tmp/packet-lily-home.html \
               && cmp -s app.js /tmp/packet-lily-app.js \
               && cmp -s sw.js /tmp/packet-lily-sw.js; then
